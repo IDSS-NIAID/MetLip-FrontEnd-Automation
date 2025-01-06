@@ -16,7 +16,7 @@ library(dplyr)
 #' @examples
 #' generate_sample_meta_data('abc123', c('stim', 'control'), c('plasma', 'kidney', 'heart'), 3, 5, path = NULL)
 #' @export
-#'
+#' @importFrom dplyr arrange group_by mutate row_number ungroup
 generate_sample_meta_data <- function(project_id = vectorize_input("Enter Project ID: "),
                                       conditions = vectorize_input("Enter conditions (Space Separated): "),
                                       matrices = vectorize_input("Enter matrices (Space Separated): "),
