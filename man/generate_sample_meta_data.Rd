@@ -7,7 +7,7 @@ Function to create the sample meta data using input from the collaborator}
 \usage{
 generate_sample_meta_data(
   project_id = vectorize_input("Enter Project ID: "),
-  conditions = vectorize_input("Enter conditions (Space Separated): "),
+  conditions = vectorize_input("Enter conditions (Comma Separated): ", ","),
   matrices = vectorize_input("Enter matrices (Space Separated): "),
   replicates = vectorize_input("Enter number of replicates: ", convert = as.numeric),
   num_subjects = vectorize_input("Enter number of subjects in the study: ", convert =
@@ -36,5 +36,10 @@ generate_sample_meta_data
 Function to create the sample meta data using input from the collaborator
 }
 \examples{
-generate_sample_meta_data('abc123', c('stim', 'control'), c('plasma', 'kidney', 'heart'), 3, 5, path = NULL)
+generate_sample_meta_data(project_id = 'abc123',
+                          conditions = c('stim', 'control'),
+                          matrices = c('plasma', 'kidney', 'heart'),
+                          replicates = 3,
+                          num_subjects = 5,
+                          path = NULL)
 }

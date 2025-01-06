@@ -1,4 +1,4 @@
-Package: MetLipAuotmation
+Package: MetLipAutomation
 Title: MetLip front end automation
 Version: 0.0-1
 Authors@R: c(person('Ian', 'Lacroix', email = 'ian.lacroix@nih.gov',
