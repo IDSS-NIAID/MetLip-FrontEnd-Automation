@@ -1,0 +1,10 @@
+Package: MetLipAuotmation
+Title: MetLip front end automation
+Version: 0.0-1
+Authors@R: c(person('Ian', 'Lacroix', email = 'ian.lacroix@nih.gov',
+                    role = c('cre', 'aut')),
+             person('Randy', 'Johnson', email = 'randall.johnson@nih.gov',
+                    role = 'aut'))
+Description: Utility package with tools for autmoation of MetLip workflows.
+License: MIT + file LICENSE
+Depends: R (>= 4.4)
