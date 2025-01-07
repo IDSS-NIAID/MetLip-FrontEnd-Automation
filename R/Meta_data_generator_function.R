@@ -168,4 +168,11 @@ generate_plate_meta_data <- function(sample_meta_data,
                             reserve_qc    ~ paste(   'QC', Batch, sep = ''),
                             TRUE          ~ Vial)) |>
     select(Batch, Plate, Position, Project_id, Vial, Matrix)
+
+
+  # write csv if desired
+  if(!is.null(path))
+    write.csv(retval, path, row.names = FALSE)
+
+  invisible(retval)
 }
