@@ -7,7 +7,7 @@ library(tidyverse)
 # Acquired_Samples_Data is currently made manually using TAS project submission details.
 
 plate_data <- read.csv("Plate_Metadata.csv")  # Load plate metadata
-aquired_samples <- read.csv("Acquired_Samples_Data.csv")  # Load acquired sample data
+acquired_samples <- read.csv("Acquired_Samples_Data.csv")  # Load acquired sample data
 
 
 #### Data Pre-processing ####
@@ -32,10 +32,10 @@ project_id <- unique(temp_2$Project_id)
 #### Sequence Generator ####
 
 # Loop through each unique MS method
-for (method in unique(aquired_samples$MS_method)) {
+for (method in unique(acquired_samples$MS_method)) {
   
   # Filter data for the current MS method and join with plate metadata
-  select_method <- aquired_samples %>% 
+  select_method <- acquired_samples %>% 
     filter(MS_method == method) %>%  # Select MS method iteratively 
     left_join(plate_data, by = "Submitted_name") %>%  # Merge with plate data
     mutate(Randomization = NA) %>%  # Initialize randomization column
