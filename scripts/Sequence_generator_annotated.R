@@ -198,7 +198,9 @@ for (method in unique(acquired_samples$MS_method)) {
       # Combine results into final dataset and export
       out_isl <- bind_rows(my_list_holder) %>% 
         mutate(Run_number = paste("Run", row_number(), sep = "-"),
-               Data_file = paste(Project_id, Matrix, Vial, Run_number, sep = "_")) %>% 
+               Folder_name = paste(format(Sys.Date(), "%Y%m%d"), Project_id, ms_method, sep = "_"),
+               Run_name = paste(Project_id, Vial, Run_number, sep = "_"),
+               Data_file = paste(Folder_name, "\\", Run_name, sep = "")) %>% 
         select(Vial, MS_method, Plate, Position, Injection_vol, Matrix, Data_file) %>% 
         rename(`Sample Name` = Vial, 
                `MS method` = MS_method,
