@@ -78,13 +78,8 @@ for (method in unique(acquired_samples$MS_method)) {
   # Loop through each unique matrix type
   for (mtx in unique(select_method$Matrix)) {
     
-    
     # Filter data for the current matrix type iteratively
     isl_temp_pre <- select_method %>% filter(Matrix == mtx)
-    
-    
-    # Vector of batches
-    batch_vec <- unique(select_method$Batch)
     
     # Generate a sequence for each batch
     for (batch in unique(select_method$Batch)) {
