@@ -12,11 +12,12 @@ generate_plate_meta_data(
   num_qc = 1,
   plates_per_batch = 3,
   path = "Plate_Metadata.csv",
-  randomize = TRUE
+  randomize = TRUE,
+  seed = 394875
 )
 }
 \arguments{
-\item{sample_meta_data}{A data.frame with the sample meta data}
+\item{sample_meta_data}{A data.frame with the sample meta data (see Details)}
 
 \item{num_wells}{Number of wells per plate}
 
@@ -28,7 +29,9 @@ generate_plate_meta_data(
 
 \item{path}{The path to save the csv file (set to NULL to skip save)}
 
-\item{randomize}{Whether to randomize the sample order if they need to be run in multiple batches}
+\item{randomize}{Logical, whether to randomize the sample order if they need to be run in multiple batches}
+
+\item{seed}{Integer, the seed to use for randomization}
 }
 \value{
 A data.frame with the plate meta data is invisibly returned and a csv file is generated at `path`.
@@ -36,4 +39,8 @@ A data.frame with the plate meta data is invisibly returned and a csv file is ge
 \description{
 generate_plate_meta_data
 Function to create the plate meta data using input from the collaborator
+}
+\details{
+The `sample_meta_data` data.frame should have the following columns: `Project_id`, `Vial`, and `Matrix`.
+Other columns are allowed but will be ignored.
 }

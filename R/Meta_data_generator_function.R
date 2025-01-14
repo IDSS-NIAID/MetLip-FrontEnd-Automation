@@ -55,21 +55,26 @@ generate_sample_meta_data <- function(project_id = vectorize_input("Enter Projec
 #' generate_plate_meta_data
 #' Function to create the plate meta data using input from the collaborator
 #'
-#' @param sample_meta_data A data.frame with the sample meta data
+#' @param sample_meta_data A data.frame with the sample meta data (see Details)
 #' @param num_wells Number of wells per plate
 #' @param num_blanks Number of blank wells per batch
 #' @param num_qc Number of QC wells per matrix type
 #' @param plates_per_batch Number of plates to use per batch
 #' @param path The path to save the csv file (set to NULL to skip save)
-#' @param randomize Whether to randomize the sample order if they need to be run in multiple batches
+#' @param randomize Logical, whether to randomize the sample order if they need to be run in multiple batches
+#' @param seed Integer, the seed to use for randomization
+#'
+#' @details The `sample_meta_data` data.frame should have the following columns: `Project_id`, `Vial`, and `Matrix`.
+#' Other columns are allowed but will be ignored.
 #'
 #' @return A data.frame with the plate meta data is invisibly returned and a csv file is generated at `path`.
 #' @export
-#' @importFrom dplyr arrange case_when group_by join_by left_join mutate n row_number select ungroup
+#' @importFrom dplyr arrange case_when filter group_by join_by left_join mutate n row_number select ungroup
+#' @importFrom purrr map
 generate_plate_meta_data <- function(sample_meta_data,
                                      num_wells = 54, num_blanks = 1, num_qc = 1, plates_per_batch = 3,
                                      path = 'Plate_Metadata.csv',
-                                     randomize = TRUE)
+                                     randomize = TRUE, seed = 394875)
 {
   # get rid of those pesky "no visible binding" errors
   if(FALSE)
@@ -92,18 +97,34 @@ generate_plate_meta_data <- function(sample_meta_data,
   # we will assign `merge_id` to each row of `sample_meta_data` to match with `retval` below
   if(plates_per_batch * num_wells - (num_blanks + num_qc*num_matrices) > num_samples)  # do they all fit in one batch?
   {
+    # one batch
     batches <- 1
+
+    # one batch containing samples from all matrices
+    batch_matrix <- levels(sample_meta_data$Matrix) |>
+      list()
+
+    # number of QC samples per batch
     num_qc_per_batch <- num_qc * num_matrices
 
+    # add `merge_id` and `Batch` to `sample_meta_data`
     sample_meta_data <- sample_meta_data |>
       mutate(merge_id = row_number(),
              Batch = 1)
 
   }else if(plates_per_batch * num_wells - (num_blanks + num_qc) > samples_per_matrix){ # do they all fit in one batch per matrix?
 
+    # num_matrices batches
     batches <- 1:num_matrices
+
+    # one entry per batch listing the matrix for that batch
+    batch_matrix <- levels(sample_meta_data$Matrix) |>
+      as.list()
+
+    # number of QC samples per batch
     num_qc_per_batch <- num_qc
 
+    # add `merge_id` and `Batch` to `sample_meta_data`
     sample_meta_data <- sample_meta_data |>
       group_by(Matrix) |>
       mutate(merge_id = row_number(),
@@ -113,25 +134,33 @@ generate_plate_meta_data <- function(sample_meta_data,
   }else{                                                                               # if neither, split into batches by matrix
 
     batches_per_matrix <- ceiling(samples_per_matrix / (plates_per_batch * num_wells - (num_blanks + num_qc)))
-    batches <- 1:(num_matrices * batches_per_matrix)
 
+    # list of batches for each matrix
+    batches <- map(1:num_matrices, ~ 1:batches_per_matrix + batches_per_matrix*(.x-1))
+
+    # list of matrices for each batch
+    batch_matrix <- map(unlist(batches), ~ ceiling(.x / batches_per_matrix))
+
+    # number of QC samples and maximum number of samples per batch
     num_qc_per_batch <- num_qc
-
     max_samples_per_batch <- plates_per_batch * num_wells - (num_blanks + num_qc_per_batch)
 
-
     # assign samples to batches
-    sample_order <- rep(batches, each = max_samples_per_batch)
+    sample_order <- map(batches, ~ rep(.x, each = max_samples_per_batch))
 
     if(randomize) # randomize the order of samples
     {
-      sample_order <- sample(sample_order)
+      if(!is.null(seed))
+        set.seed(seed)
+
+      sample_order <- map(sample_order, ~ sample(.x))
     }
 
+    # add `merge_id` and `Batch` to `sample_meta_data`
     sample_meta_data <- sample_meta_data |>
       group_by(Matrix) |>
-      mutate(                   # /---               grab batches for this Matrix               ---\  /-- pick first n() --\
-             Batch = sample_order[ceiling(sample_order / num_matrices) == unique(as.integer(Matrix))][        1:n()         ]) |>
+      mutate(        #/---- grab batches for this Matrix ----\  /-- pick first n() --\
+             Batch = sample_order[[unique(as.integer(Matrix))]][        1:n()         ]) |>
       ungroup() |>
       group_by(Matrix, Batch) |>
       mutate(merge_id = row_number()) |>
@@ -141,7 +170,7 @@ generate_plate_meta_data <- function(sample_meta_data,
 
 
   # expand list of parameters into data.frame for all batches
-  retval <- expand.grid(Batch = batches,
+  retval <- expand.grid(Batch = unlist(batches) |> unique(),
                         Plate = 1:plates_per_batch,
                         Position = 1:num_wells,
                         Project_id = unique(sample_meta_data$Project_id)) |>
@@ -155,7 +184,7 @@ generate_plate_meta_data <- function(sample_meta_data,
 
 
   # calculate merge_id for `retval`, ignoring `NA` values
-  for(i in batches)
+  for(i in unique(retval$Batch))
   {
     index <- which(retval$Batch == i & !is.na(retval$merge_id))
     retval$merge_id[index] <- cumsum(retval$merge_id[index])
@@ -163,11 +192,20 @@ generate_plate_meta_data <- function(sample_meta_data,
 
 
   # merge sample data
-  retval <- left_join(retval, sample_meta_data, by = join_by(Batch, Project_id, merge_id)) |>
-    mutate(Vial = case_when(reserve_blank ~ paste('BLANK', Batch, sep = ''),
-                            reserve_qc    ~ paste(   'QC', Batch, sep = ''),
-                            TRUE          ~ Vial)) |>
-    select(Batch, Plate, Position, Project_id, Vial, Matrix)
+  retval <- left_join(retval, sample_meta_data, by = join_by(Batch, Project_id, merge_id))
+
+  for(i in unique(retval$Batch))
+  {
+    retval$Vial[retval$Batch == i & retval$reserve_blank] <- 'BLANK'
+
+    index <- retval$Batch == i & retval$reserve_qc
+    retval$Vial[index] <- paste('QC', batch_matrix[[i]], sep = '')
+    retval$Matrix[index] <- levels(sample_meta_data$Matrix)[batch_matrix[[i]]]
+  }
+
+  retval <- retval |>
+    select(Batch, Plate, Position, Project_id, Vial, Matrix) |>
+    filter(!is.na(Vial))
 
 
   # write csv if desired

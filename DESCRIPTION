@@ -9,7 +9,8 @@ Description: Utility package with tools for autmoation of MetLip workflows.
 License: MIT + file LICENSE
 Depends: R (>= 4.4)
 Imports:
-  dplyr
+  dplyr,
+  purrr
 URL: https://github.com/IDSS-NIAID/MetLip-FrontEnd-Automation
 RoxygenNote: 7.3.2
 Encoding: UTF-8
