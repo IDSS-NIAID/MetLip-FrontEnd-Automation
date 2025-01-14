@@ -101,7 +101,8 @@ generate_plate_meta_data <- function(sample_meta_data,
     batches <- 1
 
     # one batch containing samples from all matrices
-    batch_matrix <- levels(sample_meta_data$Matrix) |>
+    batch_matrix <- unique(sample_meta_data$Matrix) |>
+      as.numeric() |>
       list()
 
     # number of QC samples per batch
@@ -118,7 +119,8 @@ generate_plate_meta_data <- function(sample_meta_data,
     batches <- 1:num_matrices
 
     # one entry per batch listing the matrix for that batch
-    batch_matrix <- levels(sample_meta_data$Matrix) |>
+    batch_matrix <- unique(sample_meta_data$Matrix) |>
+      as.numeric() |>
       as.list()
 
     # number of QC samples per batch
