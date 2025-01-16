@@ -2,12 +2,15 @@ library(shiny)
 library(dplyr)
 library(DT)
 library(writexl)
+library(readxl)
 
 # Define UI for application
 ui <- fluidPage(
   titlePanel("Meta Data Generator Dashboard (Beta)"),
   sidebarLayout(
     sidebarPanel(
+      fileInput("data_file", "Upload Sample Data File (Excel)", accept = c(".xlsx")),
+      uiOutput("column_select_ui"),
       textInput("tas_id", "Enter TAS ID:"),
       textInput("metlip_id", "Enter Sub (MetLip) ID:"),
       textInput("conditions", "Enter conditions (Comma Separated):"),
@@ -27,11 +30,29 @@ ui <- fluidPage(
 
 # Define server logic
 server <- function(input, output, session) {
+  sample_data <- reactiveVal()
   meta_data <- reactiveVal()
   
+  observeEvent(input$data_file, {
+    req(input$data_file)
+    data <- read_excel(input$data_file$datapath)
+    sample_data(data)
+  })
+  
+  output$column_select_ui <- renderUI({
+    req(sample_data())
+    data_cols <- names(sample_data())
+    tagList(
+      selectInput("sample_name_col", "Select Sample Name Column:", choices = data_cols),
+      selectInput("project_id_col", "Select Project ID Column:", choices = data_cols)
+    )
+  })
+  
   observeEvent(input$generate, {
+    req(sample_data())
     conditions <- unlist(strsplit(input$conditions, ","))
     matrices <- input$matrices
+    
     
     full_data <- list()
     
