@@ -159,11 +159,13 @@ generate_plate_meta_data <- function(sample_meta_data,
 
 # define the UI (User Interface)
 ui <- dashboardPage(
-  dashboardHeader(title = "Meta Data Dashboard"),
+  dashboardHeader(title = "MetLip Dashboard"),
   dashboardSidebar(
     sidebarMenu(
       menuItem("Sample Meta Data", tabName = "sample_meta", icon = icon("search")),
-      menuItem("Plate Meta Data", tabName = "plate_meta", icon = icon("vial"))
+      menuItem("Sample Acquisition IDs", tabName = "acquisition_ids", icon = icon("table")),
+      menuItem("Plate Meta Data", tabName = "plate_meta", icon = icon("vial")),
+      menuItem("Sequence OS Data", tabName = "sequence_data", icon = icon("dna"))
     )
   ),
   dashboardBody(
@@ -176,6 +178,16 @@ ui <- dashboardPage(
                 )
               )
       ),
+      tabItem(tabName = "acquisition_ids",
+              fluidRow(
+                box(title = "Generate Sample Acquisition IDs", status = "primary", solidHeader = TRUE, 
+                    actionButton("generate", "Generate Data"),
+                    downloadButton("download_acq_ids", "Download CSV"),
+                    downloadButton("download_acq_ids_excel", "Download Excel"),
+                    DTOutput("acq_ids_table")
+                )
+              )
+      ),
       tabItem(tabName = "plate_meta",
               fluidRow(
                 box(title = "Generate Plate Meta Data", status = "primary", solidHeader = TRUE, 
@@ -183,6 +195,15 @@ ui <- dashboardPage(
                     downloadButton("download_plate", "Download CSV"),
                     downloadButton("download_plate_excel", "Download Excel"),
                     DTOutput("plate_table")
+                )
+              )
+      ),
+      tabItem(tabName = "sequence_data",
+              fluidRow(
+                box(title = "Generate Sequence", status = "primary", solidHeader = TRUE, 
+                    actionButton("generate", "Generate Data"),
+                    downloadButton("download_sequence", "Download CSV"),
+                    DTOutput("sequence_table")
                 )
               )
       )
