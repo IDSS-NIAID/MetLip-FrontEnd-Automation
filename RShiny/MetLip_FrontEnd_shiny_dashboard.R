@@ -5,156 +5,10 @@ library(readxl)
 library(dplyr)
 library(writexl)
 library(purrr)
+library(plotly)
+library(lubridate)
+library(stringr)
 
-
-
-# function to generate plate meta data. Alternative would be to source this function from a separate script.
-
-generate_plate_meta_data <- function(sample_meta_data,
-                                     num_wells = 54, num_blanks = 1, num_qc = 1, plates_per_batch = 3,
-                                     path = 'Plate_Metadata.csv',
-                                     randomize = FALSE, seed = 394875)
-{
-  # get rid of those pesky "no visible binding" errors
-  if(FALSE)
-    Matrix <- Batch <- Plate <- Position <- Project_id <- Vial <- merge_id <- reserve_blank <- reserve_qc <- NULL
-  
-  # sample_meta_data <- MetLipAutomation::generate_sample_meta_data('abc123', c('stim', 'control'), c('plasma', 'kidney', 'heart'), 5, 40, path = NULL)
-  
-  # assuming `sample_meta_data$Matrix` is a factor (fix if not)
-  if(!is.factor(sample_meta_data$Matrix))
-    sample_meta_data$Matrix <- as.factor(sample_meta_data$Matrix)
-  
-  
-  # determine sample stats
-  num_matrices <- levels(sample_meta_data$Matrix) |> length()
-  num_samples <- nrow(sample_meta_data)
-  samples_per_matrix <- num_samples / num_matrices
-  
-  
-  # determine batch sizes and assign batch numbers for each row of `sample_meta_data`
-  # we will assign `merge_id` to each row of `sample_meta_data` to match with `retval` below
-  if(plates_per_batch * num_wells - (num_blanks + num_qc*num_matrices) > num_samples)  # do they all fit in one batch?
-  {
-    # one batch
-    batches <- 1
-    
-    # one batch containing samples from all matrices
-    batch_matrix <- unique(sample_meta_data$Matrix) |>
-      as.numeric() |>
-      list()
-    
-    # number of QC samples per batch
-    num_qc_per_batch <- num_qc * num_matrices
-    
-    # add `merge_id` and `Batch` to `sample_meta_data`
-    sample_meta_data <- sample_meta_data |>
-      mutate(merge_id = row_number(),
-             Batch = 1)
-    
-  }else if(plates_per_batch * num_wells - (num_blanks + num_qc) > samples_per_matrix){ # do they all fit in one batch per matrix?
-    
-    # num_matrices batches
-    batches <- 1:num_matrices
-    
-    # one entry per batch listing the matrix for that batch
-    batch_matrix <- unique(sample_meta_data$Matrix) |>
-      as.numeric() |>
-      as.list()
-    
-    # number of QC samples per batch
-    num_qc_per_batch <- num_qc
-    
-    # add `merge_id` and `Batch` to `sample_meta_data`
-    sample_meta_data <- sample_meta_data |>
-      group_by(Matrix) |>
-      mutate(merge_id = row_number(),
-             Batch = as.integer(Matrix)) |>
-      ungroup()
-    
-  }else{                                                                               # if neither, split into batches by matrix
-    
-    batches_per_matrix <- ceiling(samples_per_matrix / (plates_per_batch * num_wells - (num_blanks + num_qc)))
-    
-    # list of batches for each matrix
-    batches <- map(1:num_matrices, ~ 1:batches_per_matrix + batches_per_matrix*(.x-1))
-    
-    # list of matrices for each batch
-    batch_matrix <- map(unlist(batches), ~ ceiling(.x / batches_per_matrix))
-    
-    # number of QC samples and maximum number of samples per batch
-    num_qc_per_batch <- num_qc
-    max_samples_per_batch <- plates_per_batch * num_wells - (num_blanks + num_qc_per_batch)
-    
-    # assign samples to batches
-    sample_order <- map(batches, ~ rep(.x, each = max_samples_per_batch))
-    
-    if(randomize) # randomize the order of samples
-    {
-      if(!is.null(seed))
-        set.seed(seed)
-      
-      sample_order <- map(sample_order, ~ sample(.x))
-    }
-    
-    # add `merge_id` and `Batch` to `sample_meta_data`
-    sample_meta_data <- sample_meta_data |>
-      group_by(Matrix) |>
-      mutate(        #/---- grab batches for this Matrix ----\  /-- pick first n() --\
-        Batch = sample_order[[unique(as.integer(Matrix))]][        1:n()         ]) |>
-      ungroup() |>
-      group_by(Matrix, Batch) |>
-      mutate(merge_id = row_number()) |>
-      ungroup()
-    
-  }
-  
-  
-  # expand list of parameters into data.frame for all batches
-  retval <- expand.grid(Batch = unlist(batches) |> unique(),
-                        Plate = 1:plates_per_batch,
-                        Position = 1:num_wells,
-                        Project_id = unique(sample_meta_data$Project_id)) |>
-    
-    arrange(Batch, Plate, Position) |>
-    
-    # set up for merging sample data
-    mutate(reserve_blank = Plate == plates_per_batch & Position > num_wells - num_blanks,
-           reserve_qc    = Plate == plates_per_batch & Position > num_wells - num_blanks - num_qc_per_batch & !reserve_blank,
-           merge_id = ifelse(reserve_blank | reserve_qc, NA, 1)) # need a `cumsum` by `Batch` that will ignore `NA` values -- take care of that below
-  
-  
-  # calculate merge_id for `retval`, ignoring `NA` values
-  for(i in unique(retval$Batch))
-  {
-    index <- which(retval$Batch == i & !is.na(retval$merge_id))
-    retval$merge_id[index] <- cumsum(retval$merge_id[index])
-  }
-  
-  
-  # merge sample data
-  retval <- left_join(retval, sample_meta_data, by = join_by(Batch, Project_id, merge_id))
-  
-  for(i in unique(retval$Batch))
-  {
-    retval$Vial[retval$Batch == i & retval$reserve_blank] <- 'BLANK'
-    
-    index <- retval$Batch == i & retval$reserve_qc
-    retval$Vial[index] <- paste('QC', batch_matrix[[i]], sep = '')
-    retval$Matrix[index] <- levels(sample_meta_data$Matrix)[batch_matrix[[i]]]
-  }
-  
-  retval <- retval |>
-    select(Batch, Plate, Position, Project_id, Vial, Matrix) |>
-    filter(!is.na(Vial))
-  
-  
-  # write csv if desired
-  if(!is.null(path))
-    write.csv(retval, path, row.names = FALSE)
-  
-  invisible(retval)
-}
 
 
 # define the UI (User Interface)
@@ -162,60 +16,65 @@ ui <- dashboardPage(
   dashboardHeader(title = "MetLip Dashboard"),
   dashboardSidebar(
     sidebarMenu(
-      menuItem("Sample Meta Data", tabName = "sample_meta", icon = icon("search")),
+      menuItem("TAS Submitted Samples", tabName = "sample_meta", icon = icon("search")),
       menuItem("Sample Acquisition IDs", tabName = "acquisition_ids", icon = icon("table")),
       menuItem("Plate Meta Data", tabName = "plate_meta", icon = icon("vial")),
-      menuItem("Sequence OS Data", tabName = "sequence_data", icon = icon("dna"))
-    )
-  ),
+      menuItem("SciexOS Sequence", tabName = "sequence_data", icon = icon("dna")))),
+  
   dashboardBody(
+    # define UI for uploading the TAS submitted samples file
     tabItems(
       tabItem(tabName = "sample_meta",
               fluidRow(
-                box(title = "Upload Sample Meta Data", status = "primary", solidHeader = TRUE, 
+                box(title = "Upload TAS Submitted Samples", status = "primary", solidHeader = TRUE, 
                     fileInput("sample_file", "Choose Excel File", accept = c(".xlsx", ".xls")),
-                    DTOutput("sample_table")
-                )
-              )
-      ),
+                    DTOutput("sample_table")))),
+      
+      # define UI for acquisition IDs tab
       tabItem(tabName = "acquisition_ids",
               fluidRow(
-                box(title = "Generate Sample Acquisition IDs", status = "primary", solidHeader = TRUE, 
-                    actionButton("generate", "Generate Data"),
+                box(title = "Acquisition IDs Per Month", status = "primary", solidHeader = TRUE, 
+                    plotlyOutput("acq_ids_plot")),
+                
+                box(title = "Generate Sample Acquisition IDs", status = "primary", solidHeader = TRUE, width = 12,
+                    checkboxGroupInput("ms_method_selection", "Select MS Methods:", 
+                                       choices = c("TCM-F5","TCM-IP", "LM", "TBL", "SCFA", "Bile-Acids", "Custom"), 
+                                       selected = c("TCM-F5","TCM-IP", "LM", "TBL", "SCFA", "Bile-Acids", "Custom")),
+                    actionButton("generate_acq_ids", "Generate Data"),
                     downloadButton("download_acq_ids", "Download CSV"),
                     downloadButton("download_acq_ids_excel", "Download Excel"),
-                    DTOutput("acq_ids_table")
-                )
-              )
-      ),
+                    div(style = "overflow-x: auto;"),
+                    DTOutput("acq_ids_table")))),
+      
+      # define UI for generating plate meta data
       tabItem(tabName = "plate_meta",
               fluidRow(
                 box(title = "Generate Plate Meta Data", status = "primary", solidHeader = TRUE, 
                     actionButton("generate", "Generate Data"),
                     downloadButton("download_plate", "Download CSV"),
                     downloadButton("download_plate_excel", "Download Excel"),
-                    DTOutput("plate_table")
-                )
-              )
-      ),
+                    DTOutput("plate_table")))),
+      
+      # define UI for generating SciexOS sequence data
       tabItem(tabName = "sequence_data",
               fluidRow(
                 box(title = "Generate Sequence", status = "primary", solidHeader = TRUE, 
                     actionButton("generate", "Generate Data"),
                     downloadButton("download_sequence", "Download CSV"),
-                    DTOutput("sequence_table")
-                )
-              )
+                    DTOutput("sequence_table")))
       )
     )
   )
 )
 
 # write the server logic. The server function controls what happens when the users interact with the dashboard.
-server <- function(input, output, session) {
+server <- function(input, output, session, sample_data) {
   sample_data <- reactiveVal()
+  acq_ids_data <- reactiveVal()
   plate_data <- reactiveVal()
+  historical_data <- reactiveVal(data.frame(Date = as.Date(character()), Count = integer()))
   
+  # logic for uploading data
   observeEvent(input$sample_file, {
     req(input$sample_file)
     df <- read_excel(input$sample_file$datapath)
@@ -227,6 +86,59 @@ server <- function(input, output, session) {
     datatable(sample_data())
   })
   
+  
+  
+  # logic for processing acquisition ids
+  observeEvent(input$generate_acq_ids, {
+    req(sample_data())
+    selected_ms_methods <- input$ms_method_selection
+    acq_data <- process_acquisition_ids(sample_data(), selected_ms_methods) # calls on our previously defined function
+    acq_ids_data(acq_data)
+    
+    # Update historical data
+    new_entry <- data.frame(month = floor_date(Sys.Date(), "month"), Count = nrow(acq_data))
+    updated_data <- bind_rows(historical_data(), new_entry) %>% 
+      group_by(month) %>%
+      summarise(Count = sum(Count), .groups = 'drop')
+    historical_data(updated_data)
+  })
+  
+  output$acq_ids_table <- renderDT({
+    req(acq_ids_data())
+    datatable(acq_ids_data(), options = list(scrollX = TRUE))
+  })
+  
+  output$download_acq_ids <- downloadHandler(
+    filename = function() { "acquisition_ids.csv" },
+    content = function(file) {
+      req(acq_ids_data())
+      write.csv(acq_ids_data(), file, row.names = FALSE)
+    }
+  )
+  
+  output$download_acq_ids_excel <- downloadHandler(
+    filename = function() { "acquisition_ids.xlsx" },
+    content = function(file) {
+      req(acq_ids_data())
+      write_xlsx(acq_ids_data(), file)
+    }
+  )
+  
+  output$acq_ids_plot <- renderPlotly({
+    req(historical_data())
+    plot_ly(historical_data(), x = ~month, y = ~Count, type = 'bar', name = 'Acquisition IDs') %>%
+      layout(title = "Total Acquisition IDs Per Month",
+             xaxis = list(title = "Month-Year", type = "date", tickformat = "%b %Y", dtick = "M1"),
+             yaxis = list(title = "Total IDs"),
+             plot_bgcolor = "#f5f5f5", 
+             paper_bgcolor = "#ffffff", 
+             font = list(family = "Arial", size = 12, color = "#333333"))
+  })
+  
+  
+  
+  
+  # logic corresponding to the generation of plate meta data
   observeEvent(input$generate, {
     req(sample_data())
     plate_meta_data <- generate_plate_meta_data(sample_data()) # calls on our previously defined function
