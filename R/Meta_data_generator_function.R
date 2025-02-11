@@ -32,6 +32,7 @@ generate_sample_meta_data <- function(project_id = vectorize_input("Enter Projec
   # get rid of those pesky "no visible binding" errors
   if(FALSE)
     Subject <- Matrix <- NULL
+    
 
   # expand list of parameters into data.frame
   retval <- expand.grid(Project_id = project_id,
@@ -42,7 +43,7 @@ generate_sample_meta_data <- function(project_id = vectorize_input("Enter Projec
 
     group_by(Matrix) |>
     arrange(Subject, .by_group = TRUE) |>
-    mutate(Vial = sprintf("%03d", row_number())) |>
+    mutate(`Submitted Sample Ids` = sprintf("%03d", row_number())) |>
     ungroup()
 
   if(!is.null(path))
@@ -64,7 +65,7 @@ generate_sample_meta_data <- function(project_id = vectorize_input("Enter Projec
 #' @param randomize Logical, whether to randomize the sample order if they need to be run in multiple batches
 #' @param seed Integer, the seed to use for randomization
 #'
-#' @details The `sample_meta_data` data.frame should have the following columns: `Project_id`, `Vial`, and `Matrix`.
+#' @details The `sample_meta_data` data.frame should have the following columns: `Project_id`, `Submitted Sample Ids`, and `Matrix`.
 #' Other columns are allowed but will be ignored.
 #'
 #' @return A data.frame with the plate meta data is invisibly returned and a csv file is generated at `path`.
@@ -78,7 +79,7 @@ generate_plate_meta_data <- function(sample_meta_data,
 {
   # get rid of those pesky "no visible binding" errors
   if(FALSE)
-    Matrix <- Batch <- Plate <- Position <- Project_id <- Vial <- merge_id <- reserve_blank <- reserve_qc <- NULL
+    Matrix <- Batch <- Plate <- Position <- Project_ID <- `Submitted Sample Ids` <- merge_id <- reserve_blank <- reserve_qc <- NULL
 
   # sample_meta_data <- MetLipAutomation::generate_sample_meta_data('abc123', c('stim', 'control'), c('plasma', 'kidney', 'heart'), 5, 40, path = NULL)
 
@@ -175,7 +176,7 @@ generate_plate_meta_data <- function(sample_meta_data,
   retval <- expand.grid(Batch = unlist(batches) |> unique(),
                         Plate = 1:plates_per_batch,
                         Position = 1:num_wells,
-                        Project_id = unique(sample_meta_data$Project_id)) |>
+                        Project_ID = unique(sample_meta_data$Project_ID)) |>
 
     arrange(Batch, Plate, Position) |>
 
@@ -194,20 +195,20 @@ generate_plate_meta_data <- function(sample_meta_data,
 
 
   # merge sample data
-  retval <- left_join(retval, sample_meta_data, by = join_by(Batch, Project_id, merge_id))
+  retval <- left_join(retval, sample_meta_data, by = join_by(Batch, Project_ID, merge_id))
 
   for(i in unique(retval$Batch))
   {
-    retval$Vial[retval$Batch == i & retval$reserve_blank] <- 'BLANK'
+    retval$`Submitted Sample Ids`[retval$Batch == i & retval$reserve_blank] <- 'BLANK'
 
     index <- retval$Batch == i & retval$reserve_qc
-    retval$Vial[index] <- paste('QC', batch_matrix[[i]], sep = '')
+    retval$`Submitted Sample Ids`[index] <- paste('QC', batch_matrix[[i]], sep = '')
     retval$Matrix[index] <- levels(sample_meta_data$Matrix)[batch_matrix[[i]]]
   }
 
   retval <- retval |>
-    select(Batch, Plate, Position, Project_id, Vial, Matrix) |>
-    filter(!is.na(Vial))
+    select(Batch, Plate, Position, Project_ID, `Submitted Sample Ids`, Matrix) |>
+    filter(!is.na(`Submitted Sample Ids`))
 
 
   # write csv if desired

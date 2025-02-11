@@ -140,8 +140,8 @@ server <- function(input, output, session, sample_data) {
   
   # logic corresponding to the generation of plate meta data
   observeEvent(input$generate, {
-    req(sample_data())
-    plate_meta_data <- generate_plate_meta_data(sample_data()) # calls on our previously defined function
+    req(acq_ids_data())
+    plate_meta_data <- generate_plate_meta_data(acq_ids_data(), randomize = FALSE) # calls on our previously defined function
     plate_data(plate_meta_data)
   })
   
