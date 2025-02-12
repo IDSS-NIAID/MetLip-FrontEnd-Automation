@@ -41,6 +41,6 @@ generate_plate_meta_data
 Function to create the plate meta data using input from the collaborator
 }
 \details{
-The `sample_meta_data` data.frame should have the following columns: `Project_id`, `Vial`, and `Matrix`.
+The `sample_meta_data` data.frame should have the following columns: `Project_id`, `Submitted Sample Ids`, and `Matrix`.
 Other columns are allowed but will be ignored.
 }

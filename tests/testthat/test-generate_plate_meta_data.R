@@ -20,14 +20,14 @@ test_that("generate_plate_meta_data works with three matrices in one batch", {
   expect_equal(ncol(plate_meta_data), 6)
 
   # check that the plate meta data has the correct column names
-  expect_equal(colnames(plate_meta_data), c('Batch', 'Plate', 'Position', 'Project_id', 'Vial', 'Matrix'))
+  expect_equal(colnames(plate_meta_data), c('Batch', 'Plate', 'Position', 'Project_ID', 'Submitted Sample Ids', 'Matrix'))
 
   # check that the plate meta data has the correct values
   expect_equal(levels(plate_meta_data$Matrix), c('plasma', 'kidney', 'heart'))
   expect_equal(unique(plate_meta_data$Plate), c(1, 2, 3))
 
   # check that Matrix is defined for all but blank wells (empty wells should be filtered already)
-  dplyr::filter(plate_meta_data, Vial != 'BLANK') |>
+  dplyr::filter(plate_meta_data, `Submitted Sample Ids` != 'BLANK') |>
     dplyr::pull(Matrix) |>
     as.numeric() |> # convert factor to numeric
     as.logical() |> # convert to logical
@@ -56,14 +56,14 @@ test_that("generate_plate_meta_data works with one batch per matrix", {
   expect_equal(ncol(plate_meta_data), 6)
 
   # check that the plate meta data has the correct column names
-  expect_equal(colnames(plate_meta_data), c('Batch', 'Plate', 'Position', 'Project_id', 'Vial', 'Matrix'))
+  expect_equal(colnames(plate_meta_data), c('Batch', 'Plate', 'Position', 'Project_ID', 'Submitted Sample Ids', 'Matrix'))
 
   # check that the plate meta data has the correct values
   expect_equal(levels(plate_meta_data$Matrix), c('plasma', 'kidney', 'heart'))
   expect_equal(unique(plate_meta_data$Plate), c(1, 2, 3))
 
   # check that Matrix is defined for all but blank wells (empty wells should be filtered already)
-  dplyr::filter(plate_meta_data, Vial != 'BLANK') |>
+  dplyr::filter(plate_meta_data, `Submitted Sample Ids` != 'BLANK') |>
     dplyr::pull(Matrix) |>
     as.numeric() |> # convert factor to numeric
     as.logical() |> # convert to logical
@@ -92,14 +92,14 @@ test_that("generate_plate_meta_data works with multiple batches per matrix", {
   expect_equal(ncol(plate_meta_data), 6)
 
   # check that the plate meta data has the correct column names
-  expect_equal(colnames(plate_meta_data), c('Batch', 'Plate', 'Position', 'Project_id', 'Vial', 'Matrix'))
+  expect_equal(colnames(plate_meta_data), c('Batch', 'Plate', 'Position', 'Project_ID', 'Submitted Sample Ids', 'Matrix'))
 
   # check that the plate meta data has the correct values
   expect_equal(levels(plate_meta_data$Matrix), c('plasma', 'kidney', 'heart'))
   expect_equal(unique(plate_meta_data$Plate), c(1, 2, 3))
 
   # check that Matrix is defined for all but blank wells (empty wells should be filtered already)
-  dplyr::filter(plate_meta_data, Vial != 'BLANK') |>
+  dplyr::filter(plate_meta_data, `Submitted Sample Ids` != 'BLANK') |>
     dplyr::pull(Matrix) |>
     as.numeric() |> # convert factor to numeric
     as.logical() |> # convert to logical

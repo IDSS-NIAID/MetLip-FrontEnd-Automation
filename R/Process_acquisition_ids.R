@@ -9,9 +9,14 @@
 #' @return A data frame with expanded sample submission data, including generated acquisition IDs.
 #' @export
 #'
-#' @import dplyr writexl stringr shiny DT plotly lubridate
-#' 
+#' @importFrom dplyr intersect slice mutate n group_by ungroup
+#' @importFrom stringr str_split
+#' @importFrom lubridate year
 process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) {
+  # take care of annoying no visible binding note
+  if(FALSE)
+    `Submitted Sample Ids` <- NULL
+  
   # Detect the file name dynamically from the working directory
   file_list <- list.files(pattern = "*.xlsx")
   if (length(file_list) == 0) {
@@ -30,19 +35,19 @@ process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) 
   all_ms_methods <- c("TCM-F5","TCM-IP", "LM", "TBL", "SCFA", "Bile-Acids", "Custom")
   
   # Filter categories based on user selection
-  ms_methods <- intersect(all_ms_methods, selected_ms_methods)
+  ms_methods <- dplyr::intersect(all_ms_methods, selected_ms_methods)
   
   # Expand the sample submission data to repeat each submitted name based on selected ms methods
-  submitted_sample_data_expanded <- submitted_sample_data %>% 
-    slice(rep(1:n(), each = length(ms_methods))) %>% 
+  submitted_sample_data_expanded <- submitted_sample_data |>
+    slice(rep(1:n(), each = length(ms_methods))) |>
     mutate(MS_method = rep(ms_methods, times = n() / length(ms_methods)),
            Date = Sys.Date())
   
   # Generate new unique IDs by appending _0001 through the appropriate count
-  submitted_sample_data_expanded <- submitted_sample_data_expanded %>% 
-    group_by(`Submitted Sample Ids`) %>% 
+  submitted_sample_data_expanded <- submitted_sample_data_expanded |>
+    group_by(`Submitted Sample Ids`) |>
     mutate(Project_ID = parsed_proj_id,
-           Acquired_Sample_ID = paste(acq_prefix, sprintf("%04d", row_number()), sep = "_")) %>%
+           Acquired_Sample_ID = paste(acq_prefix, sprintf("%04d", row_number()), sep = "_")) |>
     ungroup()
   
   return(submitted_sample_data_expanded)

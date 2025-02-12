@@ -1,6 +1,6 @@
 Package: MetLipAutomation
 Title: MetLip front end automation
-Version: 0.0-2
+Version: 0.0-3
 Authors@R: c(person('Ian', 'Lacroix', email = 'ian.lacroix@nih.gov',
                     role = c('cre', 'aut')),
              person('Randy', 'Johnson', email = 'randall.johnson@nih.gov',
@@ -10,7 +10,9 @@ License: MIT + file LICENSE
 Depends: R (>= 4.4)
 Imports:
   dplyr,
-  purrr
+  lubridate,
+  purrr,
+  stringr
 URL: https://github.com/IDSS-NIAID/MetLip-FrontEnd-Automation
 RoxygenNote: 7.3.2
 Encoding: UTF-8

@@ -35,7 +35,7 @@ generate_sample_meta_data <- function(project_id = vectorize_input("Enter Projec
     
 
   # expand list of parameters into data.frame
-  retval <- expand.grid(Project_id = project_id,
+  retval <- expand.grid(Project_ID = project_id,
                         Subject = 1:num_subjects,
                         Condition = conditions,
                         Matrix = matrices,
