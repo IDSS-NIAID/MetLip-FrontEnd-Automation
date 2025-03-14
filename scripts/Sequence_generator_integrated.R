@@ -15,23 +15,23 @@ dat_meta <- read.csv("Hourigansk_0006_Meta_Data.csv")
 acquired_samples <- read.csv("Hourigansk_0006_Acquired_Samples.csv")
 
 # Generate plate data
-# change Vial to Submitted_Sample_ID
-# add column for injection volume
 MetLipAutomation::generate_plate_meta_data(sample_meta_data = dat_meta)
 
-# Read in fixed plate data
-# there is currently an issue with the generat_plate_meta_data
-plate_data <- read.csv("Plate_Metadata_Fixed.csv") %>% 
-  rename(Submitted_Sample_ID = Vial)
+# Read in plate data
+plate_data <- read.csv("Plate_Metadata_Fixed.csv") 
 
+method = "LM"
+Injection_vol = 5
 
 
 #### Data Pre-processing ####
 
+plate_data <- plate_data %>% 
+  rename(Submitted_Sample_ID = `Submitted Sample Ids`)
+
 # Remove rows with missing values and exclude QC and BLANK samples
 # Missing values correspond to empty positions in the plate
 temp_2 <- plate_data %>% 
-  rename(Submitted_Sample_ID = `Submitted Sample Ids`) %>% 
   drop_na() %>%  # Remove rows with missing values
   filter(!str_detect(Submitted_Sample_ID, "QC") & !str_detect(Submitted_Sample_ID, "BLANK"))  # Exclude QC and BLANK samples
 
@@ -47,9 +47,10 @@ project_id <- unique(temp_2$Project_id)
 
 # Produce a data frame the MetLip operator will use when loading Vials into the Plates
 plate_loading <- acquired_samples %>% 
-  left_join(plate_data, by = "Submitted_Sample_ID") %>% 
-  rename(Acquired_name = Vial) %>% 
-  arrange(desc(MS_method), Batch, Plate, Position)
+  rename(Submitted_Sample_ID = `Submitted Sample Ids`) %>%
+  left_join(plate_data, join_by(Project_ID, Submitted_Sample_ID, Matrix)) %>% 
+  arrange(desc(MS_method), Batch, Plate, Position) %>% 
+  select(Project_ID, Date, Submitted_Sample_ID, `Submitted Sample Names`, Matrix, MS_method, Acquired_Sample_ID, Batch, Plate, Position, Notes)
 
 # Save this file for the operator
 write.csv(plate_loading, paste(Sys.Date(), project_id, "Plate_Loading_Information.csv", sep = "_"), row.names = FALSE)
@@ -60,19 +61,17 @@ write.csv(plate_loading, paste(Sys.Date(), project_id, "Plate_Loading_Informatio
 #### Sequence Generator ####
 
 # Loop through each unique MS method
-for (method in unique(acquired_samples$MS_method)) {
+for (method in unique(plate_loading$MS_method)) {
   
   # Filter data for the current MS method and join with plate metadata
-  select_method <- acquired_samples %>% 
+  select_method <- plate_loading %>% 
     filter(MS_method == method) %>%  # Select MS method iteratively 
-    left_join(plate_data, by = "Submitted_Sample_ID") %>%  # Merge with plate data
     mutate(Randomization = NA) %>%  # Initialize randomization column
-    group_by(Subject_id) %>%  # Group by subject
+    group_by(Matrix) %>%  # Group by subject
     mutate(Randomization = ifelse(is.na(Randomization), runif(n()), Randomization)) %>%  # Assign random values for randomization
     arrange(Randomization, .by_group = TRUE) %>%  # Arrange in randomized order
-    ungroup() %>% 
-    select(Project_id, Submitted_Sample_ID, Vial, MS_method, Batch, Plate, Position, Injection_vol, Matrix, Randomization)  # Select relevant columns
-  
+    ungroup() 
+    
   # Extract unique MS method name iteratively
   ms_method <- unique(select_method$MS_method)
   
@@ -99,10 +98,10 @@ for (method in unique(acquired_samples$MS_method)) {
       blank_plate_data_isl <- blank_plate_data %>% filter(Batch == batch)
       
       # Extract unique project identifier
-      project_id <- unique(isl_temp$Project_id)
+      project_id <- unique(isl_temp$Project_ID)
       
       # Produce QC and BLANK sample entries
-      new_qc_row <- data.frame(Project_id = project_id, 
+      new_qc_row <- data.frame(Project_ID = project_id, 
                                MS_method = ms_method,
                                Vial = "QC-0", 
                                Condition = paste("QC", mtx, sep = "-"), 
@@ -110,9 +109,9 @@ for (method in unique(acquired_samples$MS_method)) {
                                Batch = qc_plate_data_isl$Batch, 
                                Plate = qc_plate_data_isl$Plate,
                                Position = qc_plate_data_isl$Position,
-                               Injection_vol = qc_plate_data_isl$Injection_vol)
+                               Injection_vol = Injection_vol)
       
-      new_blank_row <- data.frame(Project_id = project_id, 
+      new_blank_row <- data.frame(Project_ID = project_id, 
                                   MS_method = ms_method,
                                   Vial = "Blank-0", 
                                   Condition = paste("Blank", mtx, sep = "-"), 
@@ -120,7 +119,7 @@ for (method in unique(acquired_samples$MS_method)) {
                                   Batch = blank_plate_data_isl$Batch, 
                                   Plate = blank_plate_data_isl$Plate,
                                   Position = blank_plate_data_isl$Position,
-                                  Injection_vol = blank_plate_data_isl$Injection_vol)
+                                  Injection_vol = Injection_vol)
       
       # Add QC and BLANK rows to dataset
       isl_temp <- bind_rows(new_qc_row, new_blank_row, isl_temp)
@@ -137,7 +136,7 @@ for (method in unique(acquired_samples$MS_method)) {
         if(i %% 10 == 0){
           insert_counter <- insert_counter + 1
           
-          new_qc_row <- data.frame(Project_id = project_id,
+          new_qc_row <- data.frame(Project_ID = project_id,
                                    MS_method = ms_method,
                                    Vial = paste("QC", insert_counter, sep = "-"), 
                                    Condition = paste("QC", mtx, sep = "-"), 
@@ -145,9 +144,9 @@ for (method in unique(acquired_samples$MS_method)) {
                                    Batch = qc_plate_data_isl$Batch, 
                                    Plate = qc_plate_data_isl$Plate,
                                    Position = qc_plate_data_isl$Position,
-                                   Injection_vol = qc_plate_data_isl$Injection_vol)
+                                   Injection_vol = Injection_vol)
           
-          new_blank_row <- data.frame(Project_id = project_id,
+          new_blank_row <- data.frame(Project_ID = project_id,
                                       MS_method = ms_method,
                                       Vial = paste("Blank", insert_counter, sep = "-"), 
                                       Condition = paste("Blank", mtx, sep = "-"), 
@@ -155,7 +154,7 @@ for (method in unique(acquired_samples$MS_method)) {
                                       Batch = blank_plate_data_isl$Batch, 
                                       Plate = blank_plate_data_isl$Plate,
                                       Position = blank_plate_data_isl$Position,
-                                      Injection_vol = blank_plate_data_isl$Injection_vol)
+                                      Injection_vol = Injection_vol)
           
           # Add the new QC and BLANK samples
           qc_blanks <- bind_rows(qc_blanks, new_qc_row, new_blank_row)
@@ -168,7 +167,7 @@ for (method in unique(acquired_samples$MS_method)) {
       # Insert final QC and BLANK samples
       last_insert_counter <- insert_counter + 1
       
-      new_qc_row <- data.frame(Project_id = project_id, 
+      new_qc_row <- data.frame(Project_ID = project_id, 
                                MS_method = ms_method,
                                Vial = paste("QC-last", last_insert_counter, sep = "-"), 
                                Condition = paste("QC", mtx, sep = "-"), 
@@ -176,9 +175,9 @@ for (method in unique(acquired_samples$MS_method)) {
                                Batch = qc_plate_data_isl$Batch, 
                                Plate = qc_plate_data_isl$Plate,
                                Position = qc_plate_data_isl$Position,
-                               Injection_vol = qc_plate_data_isl$Injection_vol)
+                               Injection_vol = Injection_vol)
       
-      new_blank_row <- data.frame(Project_id = project_id, 
+      new_blank_row <- data.frame(Project_ID = project_id, 
                                   MS_method = ms_method,
                                   Vial = paste("Blank-last", last_insert_counter, sep = "-"), 
                                   Condition = paste("Blank", mtx, sep = "-"), 
@@ -186,7 +185,7 @@ for (method in unique(acquired_samples$MS_method)) {
                                   Batch = blank_plate_data_isl$Batch, 
                                   Plate = blank_plate_data_isl$Plate,
                                   Position = blank_plate_data_isl$Position,
-                                  Injection_vol = blank_plate_data_isl$Injection_vol)
+                                  Injection_vol = Injection_vol)
       
       # QC-last and Blank-last will be appended to the end of the list. 
       j <- i+1
@@ -200,8 +199,8 @@ for (method in unique(acquired_samples$MS_method)) {
       # Combine results into final dataset and export
       out_isl <- bind_rows(my_list_holder) %>% 
         mutate(Run_number = paste("Run", row_number(), sep = "-"),
-               Folder_name = paste(format(Sys.Date(), "%Y%m%d"), Project_id, ms_method, sep = "_"),
-               Run_name = paste(Project_id, Vial, Run_number, sep = "_"),
+               Folder_name = paste(format(Sys.Date(), "%Y%m%d"), project_id, ms_method, sep = "_"),
+               Run_name = paste(project_id, Vial, Run_number, sep = "_"),
                Data_file = paste(Folder_name, "\\", Run_name, sep = "")) %>% 
         select(Vial, MS_method, Plate, Position, Injection_vol, Matrix, Data_file) %>% 
         rename(`Sample Name` = Vial, 
