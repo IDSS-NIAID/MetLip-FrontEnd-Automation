@@ -21,9 +21,9 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("TAS Submitted Samples", tabName = "sample_meta", icon = icon("search")),
-      menuItem("Sample Acquisition IDs", tabName = "acquisition_ids", icon = icon("table")),
-      menuItem("Plate Meta Data", tabName = "plate_meta", icon = icon("vial")),
-      menuItem("SciexOS Sequence", tabName = "sequence_data", icon = icon("dna")))),
+      menuItem("Sample Acquisition IDs", tabName = "acquisition_ids", icon = icon("cog")),
+      menuItem("Plate Meta Data", tabName = "plate_meta", icon = icon("gears")),
+      menuItem("SciexOS Sequence", tabName = "sequence_data", icon = icon("coffee")))),
   
   dashboardBody(
     # define UI for uploading the TAS submitted samples file
@@ -43,7 +43,7 @@ ui <- dashboardPage(
                 box(title = "Generate Sample Acquisition IDs", status = "primary", solidHeader = TRUE, width = 12,
                     checkboxGroupInput("ms_method_selection", "Select MS Methods:", 
                                        choices = c("TCM-F5","TCM-IP", "LM", "TBL", "SCFA", "Bile-Acids", "Custom"), 
-                                       selected = c("TCM-F5","TCM-IP", "LM", "TBL", "SCFA", "Bile-Acids", "Custom")),
+                                       selected = c()),
                     actionButton("generate_acq_ids", "Generate Data"),
                     downloadButton("download_acq_ids", "Download CSV"),
                     downloadButton("download_acq_ids_excel", "Download Excel"),
