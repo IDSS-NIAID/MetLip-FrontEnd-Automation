@@ -173,6 +173,19 @@ server <- function(input, output, session, sample_data) {
       write_xlsx(processed_plate_data()$plate_loading, file)
     }
   )
+  
+  
+  # logic corresponding to the generation of mass spec sequence data
+  observeEvent(input$generate_sequence, {
+    req(processed_plate_data())
+    generate_sequence(
+      processed_plate_data()$plate_loading,
+      processed_plate_data()$qc_plate_data,
+      processed_plate_data()$blank_plate_data,
+      processed_plate_data()$project_id,
+      injection_vol = 5
+    )
+  })
 }
 
 shinyApp(ui, server)
