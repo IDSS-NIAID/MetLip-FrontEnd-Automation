@@ -9,8 +9,15 @@
 #' @param injection_vol Numeric value specifying the injection volume.
 #' @return Exports sequence CSV files for SciexOS import.
 #' @export
-
+#' @importFrom dplyr arrange bind_rows filter mutate n rename select tibble ungroup
+#' @importFrom magrittr %>%
+#' @importFrom stats runif
+#' @importFrom utils write.csv
 generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, project_id, injection_vol) {
+  # take care of annoying no visible binding notes
+  if(FALSE)
+    MS_method <- Randomization <- Matrix <- Batch <- Acquired_Sample_ID <- Run_number <-
+      Folder_name <- Run_name <- Plate <- Injection_vol <- Data_file <- NULL
   
   # Iterate over unique MS methods in plate_loading
   for (method in unique(plate_loading$MS_method)) {

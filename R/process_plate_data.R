@@ -7,7 +7,15 @@
 #' @param acquired_samples Data frame containing acquired sample data.
 #' @return A list containing plate loading data, QC plate data, BLANK plate data, and the project ID.
 #' @export
+#' @importFrom dplyr arrange desc filter left_join rename select
+#' @importFrom stringr str_detect
+#' @importFrom tidyr drop_na
 process_plate_data <- function(plate_data, acquired_samples) {
+  # take care of annoying no visible binding notes
+  if(FALSE)
+    `Submitted Sample Ids` <- Submitted_Sample_ID <- Project_ID <- Matrix <- MS_method <-
+      Batch <- Plate <- Date <- `Submitted Sample Names` <- Acquired_Sample_ID <- Notes <- NULL
+  
   plate_data <- plate_data %>% 
     rename(Submitted_Sample_ID = `Submitted Sample Ids`)
   

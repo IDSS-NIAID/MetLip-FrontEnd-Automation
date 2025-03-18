@@ -11,8 +11,10 @@ Depends: R (>= 4.4)
 Imports:
   dplyr,
   lubridate,
+  magrittr,
   purrr,
-  stringr
+  stringr,
+  tidyr
 URL: https://github.com/IDSS-NIAID/MetLip-FrontEnd-Automation
 RoxygenNote: 7.3.2
 Encoding: UTF-8
