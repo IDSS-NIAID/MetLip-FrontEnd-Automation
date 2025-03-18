@@ -167,10 +167,10 @@ server <- function(input, output, session, sample_data) {
   )
   
   output$download_plate_excel <- downloadHandler(
-    filename = function() { "plate_meta_data.xlsx" },
+    filename = function() { "processed_plate_data.xlsx" },
     content = function(file) {
-      req(plate_data())
-      write_xlsx(plate_data(), file)
+      req(processed_plate_data())
+      write_xlsx(processed_plate_data()$plate_loading, file)
     }
   )
 }
