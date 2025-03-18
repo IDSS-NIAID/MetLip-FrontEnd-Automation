@@ -154,15 +154,15 @@ server <- function(input, output, session, sample_data) {
   })
   
   output$plate_table <- renderDT({
-    req(plate_data())
-    datatable(plate_data())
+    req(processed_plate_data())
+    datatable(processed_plate_data()$plate_loading)
   })
   
   output$download_plate <- downloadHandler(
-    filename = function() { "plate_meta_data.csv" },
+    filename = function() { "processed_plate_data.csv" },
     content = function(file) {
-      req(plate_data())
-      write.csv(plate_data(), file, row.names = FALSE)
+      req(processed_plate_data())
+      write.csv(processed_plate_data()$plate_loading, file, row.names = FALSE)
     }
   )
   
