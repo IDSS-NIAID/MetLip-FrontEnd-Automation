@@ -61,9 +61,10 @@ ui <- dashboardPage(
       tabItem(tabName = "sequence_data",
               fluidRow(
                 box(title = "Generate Sequence", status = "primary", solidHeader = TRUE, 
-                    actionButton("generate", "Generate Data"),
-                    downloadButton("download_sequence", "Download CSV"),
-                    DTOutput("sequence_table")))
+                    actionButton("generate_sequence", "Generate and Download Sequences"),
+                    DTOutput("sequence_table")
+                )
+              )
       )
     )
   )
@@ -74,6 +75,8 @@ server <- function(input, output, session, sample_data) {
   sample_data <- reactiveVal()
   acq_ids_data <- reactiveVal()
   plate_data <- reactiveVal()
+  processed_plate_data <- reactiveVal()
+  sequence_data <- reactiveVal()
   historical_data <- reactiveVal(data.frame(Date = as.Date(character()), Count = integer()))
   
   # logic for uploading data
