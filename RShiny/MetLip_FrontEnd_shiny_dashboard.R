@@ -80,7 +80,6 @@ server <- function(input, output, session, sample_data) {
   processed_plate_data <- reactiveVal()
   sequence_data <- reactiveVal()
   
-  historical_data <- reactiveVal(data.frame(Date = as.Date(character()), Count = integer()))
   
   # logic for uploading data
   observeEvent(input$sample_file, {
@@ -95,20 +94,12 @@ server <- function(input, output, session, sample_data) {
   })
   
   
-  
   # logic for processing acquisition ids
   observeEvent(input$generate_acq_ids, {
     req(sample_data())
     selected_ms_methods <- input$ms_method_selection
     acq_data <- process_acquisition_ids(sample_data(), selected_ms_methods) # calls on our previously defined function
     acq_ids_data(acq_data)
-    
-    # Update historical data
-    new_entry <- data.frame(month = floor_date(Sys.Date(), "month"), Count = nrow(acq_data))
-    updated_data <- bind_rows(historical_data(), new_entry) %>% 
-      group_by(month) %>%
-      summarise(Count = sum(Count), .groups = 'drop')
-    historical_data(updated_data)
   })
   
   output$acq_ids_table <- renderDT({
@@ -132,20 +123,8 @@ server <- function(input, output, session, sample_data) {
     }
   )
   
-  output$acq_ids_plot <- renderPlotly({
-    req(historical_data())
-    plot_ly(historical_data(), x = ~month, y = ~Count, type = 'bar', name = 'Acquisition IDs') %>%
-      layout(title = "Total Acquisition IDs Per Month",
-             xaxis = list(title = "Month-Year", type = "date", tickformat = "%b %Y", dtick = "M1"),
-             yaxis = list(title = "Total IDs"),
-             plot_bgcolor = "#f5f5f5", 
-             paper_bgcolor = "#ffffff", 
-             font = list(family = "Arial", size = 12, color = "#333333"))
-  })
-  
-  
-  
-  
+
+
   # logic corresponding to the generation of plate meta data
   observeEvent(input$generate, {
     req(acq_ids_data())
