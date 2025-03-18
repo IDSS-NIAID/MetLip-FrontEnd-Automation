@@ -77,6 +77,7 @@ server <- function(input, output, session, sample_data) {
   plate_data <- reactiveVal()
   processed_plate_data <- reactiveVal()
   sequence_data <- reactiveVal()
+  
   historical_data <- reactiveVal(data.frame(Date = as.Date(character()), Count = integer()))
   
   # logic for uploading data
@@ -148,6 +149,8 @@ server <- function(input, output, session, sample_data) {
     req(acq_ids_data())
     plate_meta_data <- generate_plate_meta_data(acq_ids_data(), randomize = FALSE) # calls on our previously defined function
     plate_data(plate_meta_data)
+    processed_data <- process_plate_data(plate_meta_data, acq_ids_data())
+    processed_plate_data(processed_data)
   })
   
   output$plate_table <- renderDT({
