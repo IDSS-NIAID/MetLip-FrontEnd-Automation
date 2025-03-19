@@ -74,8 +74,8 @@ generate_sample_meta_data <- function(project_id = vectorize_input("Enter Projec
 #' @importFrom purrr map
 generate_plate_meta_data <- function(sample_meta_data,
                                      num_wells = 54, num_blanks = 1, num_qc = 1, plates_per_batch = 3,
-                                     path = 'Plate_Metadata.csv',
-                                     randomize = TRUE, seed = 394875)
+                                     path = NULL,
+                                     randomize = FALSE, seed = 394875)
 {
   # get rid of those pesky "no visible binding" errors
   if(FALSE)
