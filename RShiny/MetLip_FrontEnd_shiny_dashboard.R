@@ -20,9 +20,9 @@ ui <- dashboardPage(
   dashboardHeader(title = "MetLip Dashboard"),
   dashboardSidebar(
     sidebarMenu(
-      menuItem("TAS Submitted Samples", tabName = "sample_meta", icon = icon("search")),
+      menuItem("File Upload", tabName = "sample_meta", icon = icon("search")),
       menuItem("Sample Acquisition IDs", tabName = "acquisition_ids", icon = icon("cog")),
-      menuItem("Plate Meta Data", tabName = "plate_meta", icon = icon("gears")),
+      menuItem("Plate Loading Data", tabName = "plate_meta", icon = icon("gears")),
       menuItem("SciexOS Sequence", tabName = "sequence_data", icon = icon("coffee")))),
   
   dashboardBody(
@@ -37,9 +37,6 @@ ui <- dashboardPage(
       # define UI for acquisition IDs tab
       tabItem(tabName = "acquisition_ids",
               fluidRow(
-                box(title = "Acquisition IDs Per Month", status = "primary", solidHeader = TRUE, 
-                    plotlyOutput("acq_ids_plot")),
-                
                 box(title = "Generate Sample Acquisition IDs", status = "primary", solidHeader = TRUE, width = 12,
                     checkboxGroupInput("ms_method_selection", "Select MS Methods:", 
                                        choices = c("TCM-F5","TCM-IP", "LM", "TBL", "SCFA", "Bile-Acids", "Custom"), 
