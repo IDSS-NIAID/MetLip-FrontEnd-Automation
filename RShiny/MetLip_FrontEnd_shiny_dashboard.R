@@ -30,14 +30,14 @@ ui <- dashboardPage(
     tabItems(
       tabItem(tabName = "sample_meta",
               fluidRow(
-                box(title = "Upload TAS Submitted Samples", status = "primary", solidHeader = TRUE, 
+                box(title = "Upload TAS Submitted Samples", status = "primary", solidHeader = TRUE, width = 12,
                     fileInput("sample_file", "Choose Excel File", accept = c(".xlsx", ".xls")),
                     DTOutput("sample_table")))),
       
       # define UI for acquisition IDs tab
       tabItem(tabName = "acquisition_ids",
               fluidRow(
-                box(title = "Generate Sample Acquisition IDs", status = "primary", solidHeader = TRUE,
+                box(title = "Generate Sample Acquisition IDs", status = "primary", solidHeader = TRUE, width = 12,
                     checkboxGroupInput("ms_method_selection", "Select MS Methods:", 
                                        choices = c("TCM-F5","TCM-IP", "LM", "TBL", "SCFA", "Bile-Acids", "Custom"), 
                                        selected = c()),
@@ -50,7 +50,7 @@ ui <- dashboardPage(
       # define UI for generating plate meta data
       tabItem(tabName = "plate_meta",
               fluidRow(
-                box(title = "Generate Plate Meta Data", status = "primary", solidHeader = TRUE, 
+                box(title = "Generate Plate Meta Data", status = "primary", solidHeader = TRUE, width = 12,
                     actionButton("generate", "Generate Data"),
                     downloadButton("download_plate", "Download CSV"),
                     downloadButton("download_plate_excel", "Download Excel"),
