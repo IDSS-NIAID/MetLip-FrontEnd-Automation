@@ -25,6 +25,7 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
     # Filter and randomize the sample order for the current method
     select_method <- plate_loading %>%
       filter(MS_method == method) %>%
+      mutate(Injection_vol = injection_vol) %>% 
       mutate(Randomization = runif(n())) %>%
       arrange(Randomization) %>%
       ungroup()
