@@ -37,7 +37,7 @@ ui <- dashboardPage(
       # define UI for acquisition IDs tab
       tabItem(tabName = "acquisition_ids",
               fluidRow(
-                box(title = "Generate Sample Acquisition IDs", status = "primary", solidHeader = TRUE, width = 12,
+                box(title = "Generate Sample Acquisition IDs", status = "primary", solidHeader = TRUE,
                     checkboxGroupInput("ms_method_selection", "Select MS Methods:", 
                                        choices = c("TCM-F5","TCM-IP", "LM", "TBL", "SCFA", "Bile-Acids", "Custom"), 
                                        selected = c()),
@@ -62,12 +62,14 @@ ui <- dashboardPage(
                 box(title = "Generate Sequence", status = "primary", solidHeader = TRUE, 
                     actionButton("generate_sequence", "Generate and Download Sequences"),
                     DTOutput("sequence_table")
-                )
-              )
+          )
+        )
       )
     )
   )
 )
+
+
 
 # write the server logic. The server function controls what happens when the users interact with the dashboard.
 server <- function(input, output, session, sample_data) {
@@ -120,8 +122,7 @@ server <- function(input, output, session, sample_data) {
     }
   )
   
-
-
+  
   # logic corresponding to the generation of plate meta data
   observeEvent(input$generate, {
     req(acq_ids_data())
@@ -153,16 +154,16 @@ server <- function(input, output, session, sample_data) {
   )
   
   
-  # logic corresponding to the generation of mass spec sequence data
+  # logic corresponding to the generation of SciexOS sequence data
   observeEvent(input$generate_sequence, {
     req(processed_plate_data())
-    generate_sequence(
+    generate_sequence( 
       processed_plate_data()$plate_loading,
       processed_plate_data()$qc_plate_data,
       processed_plate_data()$blank_plate_data,
       processed_plate_data()$project_id,
       injection_vol = 5
-    )
+    ) # calls on our previously defined function                        
   })
 }
 
