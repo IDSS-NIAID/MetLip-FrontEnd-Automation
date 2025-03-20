@@ -31,6 +31,11 @@ process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) 
   current_year <- year(Sys.Date()) %% 100 # extracts last 2-digits of year
   acq_prefix <- paste0(parsed_proj_id, "_", parsed_proj_date, "_MLA", current_year) #sneaky paste to ensure the year is attached to MLA
   
+  # Generate new unique IDs by appending _0001 through the appropriate count
+  submitted_sample_data_mod <- submitted_sample_data |>
+    mutate(Project_ID = parsed_proj_id,
+           Acquired_Sample_ID = paste(acq_prefix, sprintf("%04d", row_number()), sep = "_")) 
+  
   # Define all ms methods
   all_ms_methods <- c("TCM-F5","TCM-IP", "LM", "TBL", "SCFA", "Bile-Acids", "Custom")
   
@@ -38,17 +43,10 @@ process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) 
   ms_methods <- dplyr::intersect(all_ms_methods, selected_ms_methods)
   
   # Expand the sample submission data to repeat each submitted name based on selected ms methods
-  submitted_sample_data_expanded <- submitted_sample_data |>
+  submitted_sample_data_expanded <- submitted_sample_data_mod |>
     slice(rep(1:n(), each = length(ms_methods))) |>
     mutate(MS_method = rep(ms_methods, times = n() / length(ms_methods)),
            Date = Sys.Date())
-  
-  # Generate new unique IDs by appending _0001 through the appropriate count
-  submitted_sample_data_expanded <- submitted_sample_data_expanded |>
-    group_by(`Submitted Sample Ids`) |>
-    mutate(Project_ID = parsed_proj_id,
-           Acquired_Sample_ID = paste(acq_prefix, sprintf("%04d", row_number()), sep = "_")) |>
-    ungroup()
   
   return(submitted_sample_data_expanded)
 }
