@@ -80,8 +80,13 @@ generate_plate_meta_data <- function(sample_meta_data,
   # get rid of those pesky "no visible binding" errors
   if(FALSE)
     Matrix <- Batch <- Plate <- Position <- Project_ID <- `Submitted Sample Ids` <- merge_id <- reserve_blank <- reserve_qc <- NULL
+  
+  
+  # assumes plate positions will not change between MS-methods
+  sample_meta_data <- sample_meta_data |>
+    group_by(Matrix) %>% 
+    distinct(`Submitted Sample Ids`, .keep_all = TRUE)
 
-  # sample_meta_data <- MetLipAutomation::generate_sample_meta_data('abc123', c('stim', 'control'), c('plasma', 'kidney', 'heart'), 5, 40, path = NULL)
 
   # assuming `sample_meta_data$Matrix` is a factor (fix if not)
   if(!is.factor(sample_meta_data$Matrix))
