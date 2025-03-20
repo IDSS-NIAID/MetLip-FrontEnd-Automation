@@ -133,8 +133,8 @@ server <- function(input, output, session, sample_data) {
   })
   
   output$plate_table <- renderDT({
-    req(processed_plate_data())
-    datatable(processed_plate_data()$plate_loading)
+    req(plate_data())
+    datatable(plate_data())
   })
   
   output$download_plate <- downloadHandler(
