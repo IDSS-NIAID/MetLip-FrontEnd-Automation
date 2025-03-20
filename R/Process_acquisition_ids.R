@@ -23,6 +23,8 @@ process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) 
     stop("No Excel files found in the working directory.")
   }
   file_name <- file_list[1]  # Assuming only one Excel file is dropped at a time
+  file_name <- gsub(" ", "_", file_name) # Replace spaces with _
+  file_name <- gsub("-", "_", file_name) # Replace - with _
   parsed_prefix <- str_split(file_name, "_")[[1]]  # Parses the file name on the underscore
   parsed_proj_id <- parsed_prefix[2] # Extract the requester name which is associated as project ID
   parsed_proj_date <- parsed_prefix[3] # Extract the date of request
