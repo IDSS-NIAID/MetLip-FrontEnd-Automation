@@ -35,7 +35,7 @@ process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) 
   acq_prefix <- paste0("MLA", current_year, "_", request_id, "-") #sneaky paste to ensure the year is attached to MLA
   
   # Define all ms methods
-  all_ms_methods <- c("TCM","TCM", "TBL", "LM", "SCFA", "BA", "Custom")
+  all_ms_methods <- c("TCM", "TBL", "LM", "SCFA", "BA", "Custom")
   
   # Filter categories based on user selection
   ms_methods <- dplyr::intersect(all_ms_methods, selected_ms_methods)
@@ -48,8 +48,10 @@ process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) 
   
   # Generate new unique IDs by appending _0001 through the appropriate count
   isl_out <- submitted_sample_data_expanded |>
-    mutate(Project_ID = parsed_proj_id,
-           Acquired_Sample_ID = paste(acq_prefix, sprintf("%04d", row_number()), sep = "_")) 
+    mutate(Requester = parsed_proj_id,
+           Acquired_Sample_ID = paste(acq_prefix, sprintf("%05d", row_number()), sep = "_"), 
+           Acquired_Sample_Name = paste(`Submitted Sample Name`, MS_method)) %>% 
+    relocate(c(Acquired_Sample_ID, Acquired_Sample_Name), .before = `Submitted Sample Ids`)
   
   return(isl_out)
 }
