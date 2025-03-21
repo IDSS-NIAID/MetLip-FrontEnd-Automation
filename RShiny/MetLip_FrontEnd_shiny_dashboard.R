@@ -58,6 +58,15 @@ ui <- dashboardPage(
       tabItem(tabName = "sequence_data",
               fluidRow(
                 box(title = "Generate Sequence", status = "primary", solidHeader = TRUE, 
+                    numericInput(
+                      inputId = "injection_vol",
+                      label = "Injection Volume (uL)",
+                      value = 5,
+                      min = 2,
+                      max = 20, 
+                      step = 0.5,
+                      width = "25%"),
+                    
                     actionButton("generate_sequence", "Generate and Download Sequences"),
                     DTOutput("sequence_table")
           )
@@ -144,7 +153,7 @@ server <- function(input, output, session, sample_data) {
       processed_plate_data()$qc_plate_data,
       processed_plate_data()$blank_plate_data,
       processed_plate_data()$project_id,
-      injection_vol = 5
+      injection_vol = input$injection_vol
     ) # calls on our previously defined function                        
   })
 }
