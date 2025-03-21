@@ -28,13 +28,14 @@ process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) 
   parsed_prefix <- str_split(file_name, "_")[[1]]  # Parses the file name on the underscore
   parsed_proj_id <- parsed_prefix[2] # Extract the requester name which is associated as project ID
   parsed_proj_date <- parsed_prefix[3] # Extract the date of request
+  request_id <- parsed_prefix[5] # Extract the request ID
   
   # Define parsed acquisition identifier
   current_year <- year(Sys.Date()) %% 100 # extracts last 2-digits of year
-  acq_prefix <- paste0(parsed_proj_id, "_", parsed_proj_date, "_MLA", current_year) #sneaky paste to ensure the year is attached to MLA
+  acq_prefix <- paste0("MLA", current_year, "_", request_id, "-") #sneaky paste to ensure the year is attached to MLA
   
   # Define all ms methods
-  all_ms_methods <- c("TCM-F5","TCM-IP", "LM", "TBL", "SCFA", "Bile-Acids", "Custom")
+  all_ms_methods <- c("TCM","TCM", "TBL", "LM", "SCFA", "BA", "Custom")
   
   # Filter categories based on user selection
   ms_methods <- dplyr::intersect(all_ms_methods, selected_ms_methods)
