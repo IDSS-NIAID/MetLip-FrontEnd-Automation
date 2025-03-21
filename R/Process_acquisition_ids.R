@@ -12,6 +12,7 @@
 #' @importFrom dplyr intersect slice mutate n group_by ungroup
 #' @importFrom stringr str_split
 #' @importFrom lubridate year
+#' @importFrom writexl write_xlsx
 process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) {
   # take care of annoying no visible binding note
   if(FALSE)
@@ -44,16 +45,26 @@ process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) 
   submitted_sample_data_expanded <- submitted_sample_data |>
     slice(rep(1:n(), each = length(ms_methods))) |>
     mutate(MS_method = rep(ms_methods, times = n() / length(ms_methods)),
-           Date = Sys.Date())
+           Date_Processed = Sys.Date())
   
-  # Generate new unique IDs by appending _0001 through the appropriate count
-  isl_out <- submitted_sample_data_expanded |>
+  # Generate new unique Acquisition IDs by appending _0001 through the appropriate count
+  # This data frame will be passed along to the next step in the MetLip Dashboard (generate plate data)
+  isl_keep <- submitted_sample_data_expanded |>
     mutate(Project_ID = parsed_proj_id,
            Acquired_Sample_ID = paste(acq_prefix, sprintf("%05d", row_number()), sep = "-"), 
            Acquired_Sample_Name = paste(`Submitted Sample Names`, MS_method, sep = "_")) |> 
     relocate(c(Acquired_Sample_ID, Acquired_Sample_Name), .before = `Submitted Sample Ids`)
   
+  # Remove un-necessary columns
+  # This data frame will be saved to the working directory. Then, uploaded to TAS.
+  isl_out <- isl_keep |> 
+    select(-c(MS_method, Project_ID))
+  
+  # File name used for isl_out  
   acq_file_name <- gsub("Submitted_Samples", "Acquired_Samples", file_name)
   
-  return(list(acq_data = isl_out, acq_file_name = acq_file_name))
+  # Save the excel file
+  writexl::write_xlsx(x = isl_out, path = acq_file_name)
+  
+  return(isl_keep)
 }

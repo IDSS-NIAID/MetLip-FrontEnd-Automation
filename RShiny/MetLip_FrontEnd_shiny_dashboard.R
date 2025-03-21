@@ -42,8 +42,6 @@ ui <- dashboardPage(
                                        choices = c("TCM", "TBL", "LM", "SCFA", "BA", "Custom"), 
                                        selected = c()),
                     actionButton("generate_acq_ids", "Generate Data"),
-                    downloadButton("download_acq_ids", "Download CSV"),
-                    downloadButton("download_acq_ids_excel", "Download Excel"),
                     div(style = "overflow-x: auto;"),
                     DTOutput("acq_ids_table")))),
       
@@ -105,22 +103,6 @@ server <- function(input, output, session, sample_data) {
     req(acq_ids_data())
     datatable(acq_ids_data(), options = list(scrollX = TRUE))
   })
-  
-  output$download_acq_ids <- downloadHandler(
-    filename = function() { "TAS_Acquisition_IDs.csv" },
-    content = function(file) {
-      req(acq_ids_data())
-      write.csv(acq_ids_data(), file, row.names = FALSE)
-    }
-  )
-  
-  output$download_acq_ids_excel <- downloadHandler(
-    filename = function() { paste0(acq_data_list$acq_file_name, ".xlsx") },
-    content = function(file) {
-      req(acq_ids_data())
-      write_xlsx(acq_ids_data(), file)
-    }
-  )
   
   
   # logic corresponding to the generation of plate meta data
