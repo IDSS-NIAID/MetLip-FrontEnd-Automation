@@ -50,7 +50,7 @@ process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) 
   isl_out <- submitted_sample_data_expanded |>
     mutate(Requester = parsed_proj_id,
            Acquired_Sample_ID = paste(acq_prefix, sprintf("%05d", row_number()), sep = "_"), 
-           Acquired_Sample_Name = paste(`Submitted Sample Name`, MS_method)) |> 
+           Acquired_Sample_Name = paste(`Submitted Sample Names`, MS_method)) |> 
     relocate(c(Acquired_Sample_ID, Acquired_Sample_Name), .before = `Submitted Sample Ids`)
   
   return(isl_out)

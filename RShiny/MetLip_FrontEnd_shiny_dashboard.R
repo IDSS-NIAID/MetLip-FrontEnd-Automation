@@ -39,7 +39,7 @@ ui <- dashboardPage(
               fluidRow(
                 box(title = "Generate Sample Acquisition IDs", status = "primary", solidHeader = TRUE, width = 12,
                     checkboxGroupInput("ms_method_selection", "Select MS Methods:", 
-                                       choices = c("TCM-F5","TCM-IP", "LM", "TBL", "SCFA", "Bile-Acids", "Custom"), 
+                                       choices = c("TCM", "TBL", "LM", "SCFA", "BA", "Custom"), 
                                        selected = c()),
                     actionButton("generate_acq_ids", "Generate Data"),
                     downloadButton("download_acq_ids", "Download CSV"),
@@ -107,7 +107,7 @@ server <- function(input, output, session, sample_data) {
   })
   
   output$download_acq_ids <- downloadHandler(
-    filename = function() { "acquisition_ids.csv" },
+    filename = function() { "TAS_Acquisition_IDs.csv" },
     content = function(file) {
       req(acq_ids_data())
       write.csv(acq_ids_data(), file, row.names = FALSE)
@@ -115,7 +115,7 @@ server <- function(input, output, session, sample_data) {
   )
   
   output$download_acq_ids_excel <- downloadHandler(
-    filename = function() { "acquisition_ids.xlsx" },
+    filename = function() { "TAS_Acquisition_IDs.xlsx" },
     content = function(file) {
       req(acq_ids_data())
       write_xlsx(acq_ids_data(), file)
