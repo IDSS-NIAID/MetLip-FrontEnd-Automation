@@ -97,8 +97,8 @@ server <- function(input, output, session, sample_data) {
   observeEvent(input$generate_acq_ids, {
     req(sample_data())
     selected_ms_methods <- input$ms_method_selection
-    acq_data <- process_acquisition_ids(sample_data(), selected_ms_methods) # calls on our previously defined function
-    acq_ids_data(acq_data)
+    acq_data_list <- process_acquisition_ids(sample_data(), selected_ms_methods) # calls on our previously defined function
+    acq_ids_data(acq_data_list$acq_data)
   })
   
   output$acq_ids_table <- renderDT({
@@ -115,7 +115,7 @@ server <- function(input, output, session, sample_data) {
   )
   
   output$download_acq_ids_excel <- downloadHandler(
-    filename = function() { "TAS_Acquisition_IDs.xlsx" },
+    filename = function() { paste0(acq_data_list$acq_file_name, ".xlsx") },
     content = function(file) {
       req(acq_ids_data())
       write_xlsx(acq_ids_data(), file)

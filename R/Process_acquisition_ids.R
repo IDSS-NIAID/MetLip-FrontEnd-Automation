@@ -32,7 +32,7 @@ process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) 
   
   # Define parsed acquisition identifier
   current_year <- year(Sys.Date()) %% 100 # extracts last 2-digits of year
-  acq_prefix <- paste0("MLA", current_year, "_", request_id, "-") #sneaky paste to ensure the year is attached to MLA
+  acq_prefix <- paste0("MLA", current_year, "_", request_id) #sneaky paste to ensure the year is attached to MLA
   
   # Define all ms methods
   all_ms_methods <- c("TCM", "TBL", "LM", "SCFA", "BA", "Custom")
@@ -48,10 +48,12 @@ process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) 
   
   # Generate new unique IDs by appending _0001 through the appropriate count
   isl_out <- submitted_sample_data_expanded |>
-    mutate(Requester = parsed_proj_id,
-           Acquired_Sample_ID = paste(acq_prefix, sprintf("%05d", row_number()), sep = "_"), 
-           Acquired_Sample_Name = paste(`Submitted Sample Names`, MS_method)) |> 
+    mutate(Project_ID = parsed_proj_id,
+           Acquired_Sample_ID = paste(acq_prefix, sprintf("%05d", row_number()), sep = "-"), 
+           Acquired_Sample_Name = paste(`Submitted Sample Names`, MS_method, sep = "_")) |> 
     relocate(c(Acquired_Sample_ID, Acquired_Sample_Name), .before = `Submitted Sample Ids`)
   
-  return(isl_out)
+  acq_file_name <- gsub("Submitted_Samples", "Acquired_Samples", file_name)
+  
+  return(list(acq_data = isl_out, acq_file_name = acq_file_name))
 }
