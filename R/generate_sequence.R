@@ -16,7 +16,7 @@
 generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, project_id, injection_vol) {
   # take care of annoying no visible binding notes
   if(FALSE)
-    MS_method <- Randomization <- Matrix <- Batch <- Acquired_Sample_ID <- Run_number <-
+    MS_method <- Randomization <- Matrix <- Batch <- Acquired_Sample_Name <- Run_number <-
       Folder_name <- Run_name <- Plate <- Injection_vol <- Data_file <- NULL
   
   # Iterate over unique MS methods in plate_loading
@@ -46,14 +46,14 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
         # Ensure QC and BLANK samples appear at the start
         new_qc_row <- tibble(
           Project_ID = project_id, MS_method = ms_method, Submitted_Sample_ID = "QC-0", 
-          Acquired_Sample_ID = paste("QC", mtx, sep = "-"), Matrix = mtx, Batch = batch, 
+          Acquired_Sample_Name = paste("QC", mtx, sep = "-"), Matrix = mtx, Batch = batch, 
           Plate = unique(qc_plate_data_isl$Plate), Position = unique(qc_plate_data_isl$Position), 
           Injection_vol = injection_vol
         )
         
         new_blank_row <- tibble(
           Project_ID = project_id, MS_method = ms_method, Submitted_Sample_ID = "Blank-0", 
-          Acquired_Sample_ID = paste("Blank", mtx, sep = "-"), Matrix = mtx, Batch = batch, 
+          Acquired_Sample_Name = paste("Blank", mtx, sep = "-"), Matrix = mtx, Batch = batch, 
           Plate = unique(blank_plate_data_isl$Plate), Position = unique(blank_plate_data_isl$Position), 
           Injection_vol = injection_vol
         )
@@ -68,13 +68,13 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
           
           new_qc_row <- tibble(
             Project_ID = project_id, MS_method = ms_method, Submitted_Sample_ID = paste("QC", insert_counter, sep = "-"),
-            Acquired_Sample_ID = paste("QC", mtx, sep = "-"), Matrix = mtx, Batch = batch, 
+            Acquired_Sample_Name = paste("QC", mtx, sep = "-"), Matrix = mtx, Batch = batch, 
             Plate = unique(qc_plate_data_isl$Plate), Position = unique(qc_plate_data_isl$Position), Injection_vol = injection_vol
           )
           
           new_blank_row <- tibble(
             Project_ID = project_id, MS_method = ms_method, Submitted_Sample_ID = paste("Blank", insert_counter, sep = "-"),
-            Acquired_Sample_ID = paste("Blank", mtx, sep = "-"), Matrix = mtx, Batch = batch, 
+            Acquired_Sample_Name = paste("Blank", mtx, sep = "-"), Matrix = mtx, Batch = batch, 
             Plate = unique(blank_plate_data_isl$Plate), Position = unique(blank_plate_data_isl$Position), Injection_vol = injection_vol
           )
           
@@ -87,12 +87,12 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
           mutate(
             Run_number = paste("Run", row_number(), sep = "-"),
             Folder_name = paste(format(Sys.Date(), "%Y%m%d"), project_id, ms_method, sep = "_"),
-            Run_name = paste(project_id, Acquired_Sample_ID, Run_number, sep = "_"),
+            Run_name = paste(project_id, Acquired_Sample_Name, Run_number, sep = "_"),
             Data_file = paste(Folder_name, "\\", Run_name, sep = "")
           ) %>%
-          select(Acquired_Sample_ID, MS_method, Plate, Position, Injection_vol, Matrix, Data_file) %>%
+          select(Acquired_Sample_Name, MS_method, Plate, Position, Injection_vol, Matrix, Data_file) %>%
           rename(
-            `Sample Name` = Acquired_Sample_ID, `MS method` = MS_method, `Plate Position` = Plate, `Vial Position` = Position,
+            `Sample Name` = Acquired_Sample_Name, `MS method` = MS_method, `Plate Position` = Plate, `Vial Position` = Position,
             `Injection Volume` = Injection_vol, `Sample Type` = Matrix, `Data File` = Data_file
           )
         

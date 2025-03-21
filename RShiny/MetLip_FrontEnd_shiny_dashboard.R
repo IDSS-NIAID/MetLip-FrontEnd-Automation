@@ -95,8 +95,8 @@ server <- function(input, output, session, sample_data) {
   observeEvent(input$generate_acq_ids, {
     req(sample_data())
     selected_ms_methods <- input$ms_method_selection
-    acq_data_list <- process_acquisition_ids(sample_data(), selected_ms_methods) # calls on our previously defined function
-    acq_ids_data(acq_data_list$acq_data)
+    acq_data <- process_acquisition_ids(sample_data(), selected_ms_methods) # calls on our previously defined function
+    acq_ids_data(acq_data)
   })
   
   output$acq_ids_table <- renderDT({

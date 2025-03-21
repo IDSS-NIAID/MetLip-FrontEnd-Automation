@@ -23,8 +23,8 @@ process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) 
   if (length(file_list) == 0) {
     stop("No Excel files found in the working directory.")
   }
-  file_name <- file_list[1]  # Assuming only one Excel file is dropped at a time
-  file_name <- gsub(" ", "_", file_name) # Replace spaces with _
+  file_name_raw <- file_list[1]  # Assuming only one Excel file is dropped at a time
+  file_name <- gsub(" ", "_", file_name_raw) # Replace spaces with _
   file_name <- gsub("-", "_", file_name) # Replace - with _
   parsed_prefix <- str_split(file_name, "_")[[1]]  # Parses the file name on the underscore
   parsed_proj_id <- parsed_prefix[2] # Extract the requester name which is associated as project ID
@@ -61,7 +61,7 @@ process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) 
     select(-c(MS_method, Project_ID))
   
   # File name used for isl_out  
-  acq_file_name <- gsub("Submitted_Samples", "Acquired_Samples", file_name)
+  acq_file_name <- gsub("Submitted_Samples", "Acquired_Samples", file_name_raw)
   
   # Save the excel file
   writexl::write_xlsx(x = isl_out, path = acq_file_name)
