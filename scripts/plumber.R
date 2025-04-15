@@ -39,7 +39,5 @@ function(req, res) {
 }
 
 
-# run this to establish API
-pr("plumber.R") %>% 
-       pr_set_debug(TRUE) %>% 
-       pr_run(port = 8000)
+
+
