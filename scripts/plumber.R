@@ -3,7 +3,7 @@ library(jose)
 
 # Shared secret — must match the one in the Shiny app
 # This will come from Phil 20 or 30 characters, will be updated periodically.
-my_secret <- charToRaw("my-123-bit-secret")
+my_secret <- charToRaw(Sys.getenv("SECRET_KEY"))
 
 # Path to the Excel file to serve
 file_path <- "TAS_lacroixis_20220420_ML1_Submitted_Samples.xlsx"
