@@ -1,7 +1,8 @@
 library(plumber)
 library(jose)
 
-# Shared secret — must match the one in your Shiny app
+# Shared secret — must match the one in the Shiny app
+# This will come from Phil 20 or 30 characters, will be updated periodically.
 my_secret <- charToRaw("my-123-bit-secret")
 
 # Path to the Excel file to serve
@@ -36,3 +37,9 @@ function(req, res) {
   # Return Excel file
   readBin(file_path, "raw", n = file.info(file_path)$size)
 }
+
+
+# run this to establish API
+pr("plumber.R") %>% 
+       pr_set_debug(TRUE) %>% 
+       pr_run(port = 8000)
