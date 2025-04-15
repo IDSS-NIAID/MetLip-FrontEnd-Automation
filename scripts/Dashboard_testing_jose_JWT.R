@@ -6,7 +6,7 @@ library(readxl)
 library(DT)
 
 # Shared secret - must match what's used in plumber.R
-my_secret <- charToRaw("my-123-bit-secret")
+my_secret <- charToRaw(Sys.getenv("SECRET_KEY"))
 
 # Define UI
 ui <- dashboardPage(
