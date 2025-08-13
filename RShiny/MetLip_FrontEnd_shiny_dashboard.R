@@ -26,24 +26,13 @@ ui <- dashboardPage(
       menuItem("SciexOS Sequence", tabName = "sequence_data", icon = icon("coffee")))),
   
   dashboardBody(
-    # define UI for uploading the TAS submitted samples file
+    # define UI for uploading the TAS acquired IDs file
     tabItems(
       tabItem(tabName = "sample_meta",
               fluidRow(
-                box(title = "Upload TAS Submitted Samples", status = "primary", solidHeader = TRUE, width = 12,
+                box(title = "Upload TAS Acquired IDs", status = "primary", solidHeader = TRUE, width = 12,
                     fileInput("sample_file", "Choose Excel File", accept = c(".xlsx", ".xls")),
                     DTOutput("sample_table")))),
-      
-      # define UI for acquisition IDs tab
-      tabItem(tabName = "acquisition_ids",
-              fluidRow(
-                box(title = "Generate Sample Acquisition IDs", status = "primary", solidHeader = TRUE, width = 12,
-                    checkboxGroupInput("ms_method_selection", "Select MS Methods:", 
-                                       choices = c("TCM", "TBL", "LM", "SCFA", "BA", "Custom"), 
-                                       selected = c()),
-                    actionButton("generate_acq_ids", "Generate Data"),
-                    div(style = "overflow-x: auto;"),
-                    DTOutput("acq_ids_table")))),
       
       # define UI for generating plate meta data
       tabItem(tabName = "plate_meta",
@@ -91,29 +80,16 @@ server <- function(input, output, session, sample_data) {
   observeEvent(input$sample_file, {
     req(input$sample_file)
     df <- read_excel(input$sample_file$datapath)
-    sample_data(df)
+    acq_ids_data(df)
   })
   
   output$sample_table <- renderDT({
-    req(sample_data())
-    datatable(sample_data())
-  })
-  
-  
-  # logic for processing acquisition ids
-  observeEvent(input$generate_acq_ids, {
-    req(sample_data())
-    selected_ms_methods <- input$ms_method_selection
-    acq_data <- process_acquisition_ids(sample_data(), selected_ms_methods) # calls on our previously defined function
-    acq_ids_data(acq_data)
-  })
-  
-  output$acq_ids_table <- renderDT({
     req(acq_ids_data())
     datatable(acq_ids_data(), options = list(scrollX = TRUE))
   })
   
   
+
   # logic corresponding to the generation of plate meta data
   observeEvent(input$generate, {
     req(acq_ids_data())
