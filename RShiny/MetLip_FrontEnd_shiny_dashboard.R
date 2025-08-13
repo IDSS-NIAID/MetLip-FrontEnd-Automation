@@ -70,26 +70,40 @@ ui <- dashboardPage(
 # write the server logic. The server function controls what happens when the users interact with the dashboard.
 server <- function(input, output, session, sample_data) {
   sample_data <- reactiveVal()
+  acq_ids_preprocessed <- reactiveVal()
   acq_ids_data <- reactiveVal()
   plate_data <- reactiveVal()
   processed_plate_data <- reactiveVal()
   sequence_data <- reactiveVal()
   
   
-  # logic for uploading data
+  # logic for uploading the TAS acquisition IDs
   observeEvent(input$sample_file, {
     req(input$sample_file)
     df <- read_excel(input$sample_file$datapath)
-    acq_ids_data(df)
+    acq_ids_preprocessed(df)
   })
   
+  # view the pre-processed acquisition IDs
   output$sample_table <- renderDT({
+    req(acq_ids_preprocessed())
+    datatable(acq_ids_preprocessed(), options = list(scrollX = TRUE))
+  })
+  
+  
+  # logic for processing acquisition ids
+  observeEvent(input$generate_acq_ids, {
+    req(acq_ids_preprocessed())
+    acq_data <- process_acquisition_ids(acq_ids_preprocessed(), selected_ms_methods) # calls on our previously defined function
+    acq_ids_data(acq_data)
+  })
+  
+  output$acq_ids_table <- renderDT({
     req(acq_ids_data())
     datatable(acq_ids_data(), options = list(scrollX = TRUE))
   })
   
   
-
   # logic corresponding to the generation of plate meta data
   observeEvent(input$generate, {
     req(acq_ids_data())
