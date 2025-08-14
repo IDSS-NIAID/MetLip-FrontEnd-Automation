@@ -1,8 +1,11 @@
 #' Process sample acquisition IDs in preparation for plate meta data generation
 #'
-#' This function was largely reduced from the original.
-#' Will be maintained in case the acquisition ID generation strategy is continued.
-#' based on the file name structure and selected mass spectrometry (MS) methods.
+#' This function parses the file name to incorporate meta data with the batch information.
+#' Creates a unique project ID that is required downstream in the sequence generation pipeline.
+#'
+#' This is a largely reduced version from the original.
+#' Will be maintained in case the acquisition ID generation strategy continues.
+#' 
 #'
 #' @param submitted_sample_data A data frame containing acquisition IDs, with column `Submitted Sample Ids`.
 #'
@@ -12,7 +15,7 @@
 #' @importFrom dplyr mutate n group_by ungroup
 #' @importFrom stringr str_split
 #' @importFrom lubridate year
-process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) {
+process_acquisition_ids <- function(pre_processed_data, selected_ms_methods) {
   # take care of annoying no visible binding note
   if(FALSE)
     `Submitted Sample Ids` <- NULL
@@ -36,11 +39,11 @@ process_acquisition_ids <- function(submitted_sample_data, selected_ms_methods) 
   
   
   # Define the MS methods used in this project
-  ms_methods <- unique(submitted_sample_data$MS_method)
+  ms_methods <- unique(pre_processed_data$MS_method)
   
  
   # Generate project ID for downstream functions
-  isl_keep <- submitted_sample_data |>
+  isl_keep <- pre_processed_data |>
     mutate(Project_ID = parsed_proj_id)
   
   return(isl_keep)
