@@ -11,8 +11,8 @@ generate_plate_meta_data(
   num_blanks = 1,
   num_qc = 1,
   plates_per_batch = 3,
-  path = "Plate_Metadata.csv",
-  randomize = TRUE,
+  path = NULL,
+  randomize = FALSE,
   seed = 394875
 )
 }
