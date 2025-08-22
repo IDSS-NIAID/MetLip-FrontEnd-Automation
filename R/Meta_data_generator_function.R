@@ -70,7 +70,7 @@ generate_sample_meta_data <- function(project_id = vectorize_input("Enter Projec
 #'
 #' @return A data.frame with the plate meta data is invisibly returned and a csv file is generated at `path`.
 #' @export
-#' @importFrom dplyr arrange case_when filter group_by join_by left_join mutate n row_number select ungroup
+#' @importFrom dplyr arrange case_when filter group_by join_by left_join mutate n row_number select ungroup distinct
 #' @importFrom purrr map
 generate_plate_meta_data <- function(sample_meta_data,
                                      num_wells = 54, num_blanks = 1, num_qc = 1, plates_per_batch = 3,
