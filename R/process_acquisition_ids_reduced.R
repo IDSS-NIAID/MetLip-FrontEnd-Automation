@@ -1,4 +1,4 @@
-#' Process sample acquisition IDs in preparation for plate meta data generation
+#' Process TAS File in preparation for plate meta data generation
 #'
 #' This function parses the file name to incorporate meta data with the batch information.
 #' Creates a unique project ID that is required downstream in the sequence generation pipeline.
@@ -10,12 +10,13 @@
 #' @param submitted_sample_data A data frame containing acquisition IDs, with column `Submitted Sample Ids`.
 #'
 #' @return A data frame with expanded sample submission data, including generated acquisition IDs.
+#' 
 #' @export
 #'
-#' @importFrom dplyr mutate n group_by ungroup
+#' @importFrom dplyr mutate 
 #' @importFrom stringr str_split
 #' @importFrom lubridate year
-process_acquisition_ids <- function(pre_processed_data) {
+process_acquisition_ids_reduced <- function(pre_processed_data) {
   # take care of annoying no visible binding note
   if(FALSE)
     `Submitted Sample Ids` <- NULL
