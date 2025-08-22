@@ -15,7 +15,7 @@
 #' @importFrom dplyr mutate n group_by ungroup
 #' @importFrom stringr str_split
 #' @importFrom lubridate year
-process_acquisition_ids <- function(pre_processed_data, selected_ms_methods) {
+process_acquisition_ids <- function(pre_processed_data) {
   # take care of annoying no visible binding note
   if(FALSE)
     `Submitted Sample Ids` <- NULL
@@ -39,7 +39,7 @@ process_acquisition_ids <- function(pre_processed_data, selected_ms_methods) {
   
   
   # Define the MS methods used in this project
-  ms_methods <- unique(pre_processed_data$MS_method)
+  #ms_methods <- unique(pre_processed_data$MS_method)
   
  
   # Generate project ID for downstream functions
