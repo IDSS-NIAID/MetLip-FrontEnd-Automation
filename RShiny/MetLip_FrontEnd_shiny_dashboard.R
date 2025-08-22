@@ -78,35 +78,35 @@ ui <- dashboardPage(
 # write the server logic. The server function controls what happens when the users interact with the dashboard.
 server <- function(input, output, session, sample_data) {
   sample_data <- reactiveVal()
-  acq_ids_preprocessed <- reactiveVal()
+  file_preprocessed <- reactiveVal()
   acq_ids_data <- reactiveVal()
   plate_data <- reactiveVal()
   processed_plate_data <- reactiveVal()
   sequence_data <- reactiveVal()
   
   
-  # logic for uploading the TAS acquisition IDs
+  # logic for uploading the TAS File
   observeEvent(input$sample_file, {
     req(input$sample_file)
     df <- read_excel(input$sample_file$datapath)
-    acq_ids_preprocessed(df)
+    file_preprocessed(df)
   })
   
-  # view the pre-processed acquisition IDs
+  # view the pre-processed TAS File
   output$sample_table <- renderDT({
-    req(acq_ids_preprocessed())
-    datatable(acq_ids_preprocessed(), options = list(scrollX = TRUE))
+    req(file_preprocessed())
+    datatable(file_preprocessed(), options = list(scrollX = TRUE))
   })
   
   
-  # logic for processing acquisition ids
-  observeEvent(input$generate_acq_ids, {
-    req(acq_ids_preprocessed())
-    acq_data <- process_acquisition_ids(acq_ids_preprocessed()) # calls on our previously defined function
-    acq_ids_data(acq_data)
+  # logic to validate/process TAS File
+  observeEvent(input$validate_file, {
+    req(file_preprocessed())
+    processed_data <- process_acquisition_ids_reduced(file_preprocessed()) # calls on our previously defined (reduced) function
+    acq_ids_data(processed_data)
   })
   
-  output$acq_ids_table <- renderDT({
+  output$validation_table <- renderDT({
     req(acq_ids_data())
     datatable(acq_ids_data(), options = list(scrollX = TRUE))
   })
