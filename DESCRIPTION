@@ -14,7 +14,8 @@ Imports:
   magrittr,
   purrr,
   stringr,
-  tidyr
+  tidyr,
+  writexl
 URL: https://github.com/IDSS-NIAID/MetLip-FrontEnd-Automation
 RoxygenNote: 7.3.2
 Encoding: UTF-8
