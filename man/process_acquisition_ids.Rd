@@ -5,9 +5,9 @@
 \alias{process_acquisition_ids}
 \title{Process sample submission data and generate acquisition IDs}
 \usage{
-process_acquisition_ids(pre_processed_data, selected_ms_methods)
+process_acquisition_ids(pre_processed_data)
 
-process_acquisition_ids(pre_processed_data, selected_ms_methods)
+process_acquisition_ids(pre_processed_data)
 }
 \arguments{
 \item{selected_ms_methods}{A character vector of selected MS methods.}
