@@ -21,6 +21,7 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("File Upload", tabName = "sample_meta", icon = icon("search")),
+      menuItem("File Pre-Process", tabName = "validation", icon = icon("cog")),
       menuItem("Plate Loading Data", tabName = "plate_meta", icon = icon("gears")),
       menuItem("SciexOS Sequence", tabName = "sequence_data", icon = icon("coffee")))),
   
@@ -32,6 +33,14 @@ ui <- dashboardPage(
                 box(title = "Upload TAS File", status = "primary", solidHeader = TRUE, width = 12,
                     fileInput("sample_file", "Choose Excel File", accept = c(".xlsx", ".xls")),
                     DTOutput("sample_table")))),
+      
+      # define UI for file validation
+      tabItem(tabName = "validation",
+              fluidRow(
+                box(title = "File Validation", status = "primary", solidHeader = TRUE, width = 12,
+                    actionButton("validate_file", "Validation Step"),
+                    div(style = "overflow-x: auto;"),
+                    DTOutput("validation_table")))),
       
       # define UI for generating plate meta data
       tabItem(tabName = "plate_meta",
@@ -93,7 +102,7 @@ server <- function(input, output, session, sample_data) {
   # logic for processing acquisition ids
   observeEvent(input$generate_acq_ids, {
     req(acq_ids_preprocessed())
-    acq_data <- process_acquisition_ids(acq_ids_preprocessed(), selected_ms_methods) # calls on our previously defined function
+    acq_data <- process_acquisition_ids(acq_ids_preprocessed()) # calls on our previously defined function
     acq_ids_data(acq_data)
   })
   
