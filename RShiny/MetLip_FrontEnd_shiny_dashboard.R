@@ -21,16 +21,15 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("File Upload", tabName = "sample_meta", icon = icon("search")),
-      menuItem("Sample Acquisition IDs", tabName = "acquisition_ids", icon = icon("cog")),
       menuItem("Plate Loading Data", tabName = "plate_meta", icon = icon("gears")),
       menuItem("SciexOS Sequence", tabName = "sequence_data", icon = icon("coffee")))),
   
   dashboardBody(
-    # define UI for uploading the TAS acquired IDs file
+    # define UI for uploading the TAS file with submitted sample names and acquisition IDs
     tabItems(
       tabItem(tabName = "sample_meta",
               fluidRow(
-                box(title = "Upload TAS Acquired IDs", status = "primary", solidHeader = TRUE, width = 12,
+                box(title = "Upload TAS File", status = "primary", solidHeader = TRUE, width = 12,
                     fileInput("sample_file", "Choose Excel File", accept = c(".xlsx", ".xls")),
                     DTOutput("sample_table")))),
       
