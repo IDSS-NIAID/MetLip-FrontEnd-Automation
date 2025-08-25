@@ -85,7 +85,7 @@ generate_plate_meta_data <- function(sample_meta_data,
   # assumes plate positions will not change between MS-methods
   sample_meta_data <- sample_meta_data |>
     group_by(Matrix) |> 
-    distinct(`Submitted Sample Ids`, .keep_all = TRUE)
+    dplyr::distinct(`Submitted Sample Ids`, .keep_all = TRUE)
 
 
   # assuming `sample_meta_data$Matrix` is a factor (fix if not)
