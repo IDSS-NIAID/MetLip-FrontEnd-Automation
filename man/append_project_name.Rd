@@ -4,7 +4,7 @@
 \alias{append_project_name}
 \title{Append a user-entered project name as a new column}
 \usage{
-append_project_name(df, project_name, col = "Project_Name", overwrite = FALSE)
+append_project_name(df, project_name, col = "Project_ID", overwrite = FALSE)
 }
 \arguments{
 \item{df}{A data.frame (or tibble) of your preprocessed rows.}
