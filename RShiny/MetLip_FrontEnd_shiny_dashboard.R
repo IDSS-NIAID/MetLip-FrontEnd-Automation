@@ -8,6 +8,7 @@ library(purrr)
 library(plotly)
 library(lubridate)
 library(stringr)
+library(zip)
 
 if(FALSE)
   devtools::install_github('IDSS-NIAID/MetLip-FrontEnd-Automation')
