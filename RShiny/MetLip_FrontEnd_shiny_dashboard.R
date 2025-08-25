@@ -34,6 +34,7 @@ ui <- dashboardPage(
                     fileInput("sample_file", "Choose Excel File", accept = c(".xlsx", ".xls")),
                     DTOutput("sample_table")))),
       
+      
       # define UI for file validation
       tabItem(
         tabName = "validation",
@@ -48,6 +49,7 @@ ui <- dashboardPage(
         )
       ),
       
+      
       # define UI for generating plate meta data
       tabItem(tabName = "plate_meta",
               fluidRow(
@@ -56,6 +58,7 @@ ui <- dashboardPage(
                     downloadButton("download_plate", "Download CSV"),
                     downloadButton("download_plate_excel", "Download Excel"),
                     DTOutput("plate_table")))),
+      
       
       # define UI for generating SciexOS sequence data
       tabItem(tabName = "sequence_data",
@@ -105,11 +108,17 @@ server <- function(input, output, session, sample_data) {
   })
   
   
-  # logic to validate/process TAS File
   observeEvent(input$validate_file, {
-    req(file_preprocessed())
-    processed_data <- process_acquisition_ids_reduced(file_preprocessed()) # calls on our previously defined (reduced) function
-    acq_ids_data(processed_data)
+    req(file_preprocessed(), nzchar(trimws(input$project_name)))
+    
+    processed <- append_project_name(
+      df = file_preprocessed(),
+      project_name = input$project_name,  # repeats for all rows
+      col = "Project_Name",               # change if you want a different name
+      overwrite = TRUE                    # or FALSE if you prefer to keep existing
+    )
+    
+    acq_ids_data(processed)
   })
   
   output$validation_table <- renderDT({
