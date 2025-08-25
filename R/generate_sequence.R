@@ -7,17 +7,26 @@
 #' @param blank_plate_data Data frame containing BLANK metadata.
 #' @param project_id Unique project identifier.
 #' @param injection_vol Numeric value specifying the injection volume.
-#' @return Exports sequence CSV files for SciexOS import.
+#' @param output_dir Directory to write CSV files to. Defaults to getwd(); on Posit Connect use tempdir().
+#' @return (Invisibly) a character vector of file paths written.
 #' @export
-#' @importFrom dplyr arrange bind_rows filter mutate n rename select tibble ungroup
+#' @importFrom dplyr arrange bind_rows filter mutate n rename select tibble ungroup row_number
 #' @importFrom magrittr %>%
 #' @importFrom stats runif
 #' @importFrom utils write.csv
-generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, project_id, injection_vol) {
+#' @importFrom tibble tibble
+generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, project_id, injection_vol, output_dir = getwd()) {
   # take care of annoying no visible binding notes
   if(FALSE)
     MS_method <- Randomization <- Matrix <- Batch <- Acquired_Sample_Name <- Run_number <-
       Folder_name <- Run_name <- Plate <- Injection_vol <- Data_file <- NULL
+  
+  # PATCH
+  # --- begin: ensure output dir exists & init collector
+  if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  written_paths <- character(0)
+  # --- end
+  
   
   # Iterate over unique MS methods in plate_loading
   for (method in unique(plate_loading$MS_method)) {
@@ -80,25 +89,38 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
           
           # Insert QC and BLANK at the specified interval
           full_sequence <- bind_rows(full_sequence[1:i, ], new_qc_row, new_blank_row, full_sequence[(i+1):nrow(full_sequence), ])
-        }
+          
+        } # <- end interval insert loop
         
         # Prepare output file structure
         out_isl <- full_sequence %>%
-          mutate(
+          dplyr::mutate(
             Run_number = paste("Run", row_number(), sep = "-"),
             Folder_name = paste(format(Sys.Date(), "%Y%m%d"), project_id, ms_method, sep = "_"),
             Run_name = paste(project_id, Acquired_Sample_Name, Run_number, sep = "_"),
             Data_file = paste(Folder_name, "\\", Run_name, sep = "")
           ) %>%
-          select(Acquired_Sample_Name, MS_method, Plate, Position, Injection_vol, Matrix, Data_file) %>%
-          rename(
+          dplyr::select(Acquired_Sample_Name, MS_method, Plate, Position, Injection_vol, Matrix, Data_file) %>%
+          dplyr::rename(
             `Sample Name` = Acquired_Sample_Name, `MS method` = MS_method, `Plate Position` = Plate, `Vial Position` = Position,
             `Injection Volume` = Injection_vol, `Sample Type` = Matrix, `Data File` = Data_file
           )
         
         # Export the sequence as a CSV file
-        write.csv(out_isl, paste(Sys.Date(), project_id, ms_method, "Batch", batch, "Sequence.csv", sep = "_"), row.names = FALSE)
-      }
-    }
-  }
-}
+        #write.csv(out_isl, paste(Sys.Date(), project_id, ms_method, "Batch", batch, "Sequence.csv", sep = "_"), row.names = FALSE)
+        
+        # PATCH
+        # --- begin: write into output_dir and record path
+        fname <- paste(Sys.Date(), project_id, ms_method, "Batch", batch, "Sequence.csv", sep = "_")
+        fpath <- file.path(output_dir, fname)
+        utils::write.csv(out_isl, fpath, row.names = FALSE)
+        written_paths <- c(written_paths, fpath)
+        
+      } # end for batch
+    }   # end for matrix
+  }     # end for method
+  
+  invisible(written_paths)  # --- end: allow caller to zip/serve these files
+  
+ }
+
