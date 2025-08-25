@@ -70,7 +70,7 @@ generate_sample_meta_data <- function(project_id = vectorize_input("Enter Projec
 #'
 #' @return A data.frame with the plate meta data is invisibly returned and a csv file is generated at `path`.
 #' @export
-#' @importFrom dplyr arrange case_when filter group_by join_by left_join mutate n row_number select ungroup distinct
+#' @importFrom dplyr arrange case_when filter group_by join_by left_join mutate n row_number select ungroup distinct bind_rows anti_join
 #' @importFrom purrr map
 generate_plate_meta_data <- function(sample_meta_data,
                                      num_wells = 54, num_blanks = 1, num_qc = 1, plates_per_batch = 3,
@@ -202,18 +202,101 @@ generate_plate_meta_data <- function(sample_meta_data,
   # merge sample data
   retval <- left_join(retval, sample_meta_data, by = join_by(Batch, Project_ID, merge_id))
 
-  for(i in unique(retval$Batch))
-  {
-    retval$`Submitted Sample Ids`[retval$Batch == i & retval$reserve_blank] <- 'BLANK'
+  # --- remove this chunk if the below patch works
+  
+  # for(i in unique(retval$Batch))
+  # {
+  #   retval$`Submitted Sample Ids`[retval$Batch == i & retval$reserve_blank] <- 'BLANK'
+  # 
+  #   index <- retval$Batch == i & retval$reserve_qc
+  #   retval$`Submitted Sample Ids`[index] <- paste('QC', batch_matrix[[i]], sep = '')
+  #   retval$Matrix[index] <- levels(sample_meta_data$Matrix)[batch_matrix[[i]]]
+  # }
 
-    index <- retval$Batch == i & retval$reserve_qc
-    retval$`Submitted Sample Ids`[index] <- paste('QC', batch_matrix[[i]], sep = '')
-    retval$Matrix[index] <- levels(sample_meta_data$Matrix)[batch_matrix[[i]]]
+  # PATCH
+  # --- begin: ensure BLANK rows avoid NA in Matrix
+  for (i in unique(retval$Batch)) {
+    retval$`Submitted Sample Ids`[retval$Batch == i & retval$reserve_blank] <- "BLANK"
+    
+    idx_qc <- retval$Batch == i & retval$reserve_qc
+    retval$`Submitted Sample Ids`[idx_qc] <- paste("QC", batch_matrix[[i]], sep = "")
+    retval$Matrix[idx_qc] <- levels(sample_meta_data$Matrix)[batch_matrix[[i]]]
+    
+    # NEW: assign Matrix for BLANK rows to a valid level (pick first level)
+    idx_blank <- retval$Batch == i & retval$reserve_blank
+    if (any(idx_blank)) {
+      retval$Matrix[idx_blank] <- levels(sample_meta_data$Matrix)[1]
+    }
   }
-
-  retval <- retval |>
-    select(Batch, Plate, Position, Project_ID, `Submitted Sample Ids`, Matrix) |>
-    filter(!is.na(`Submitted Sample Ids`))
+  # --- end
+  
+  # PATCH
+  # --- begin: ensure every plate appeats without adding EMPTY
+  for (i in unique(retval$Batch)) {
+    plates_with_data <- unique(retval$Plate[retval$Batch == i & !is.na(retval$`Submitted Sample Ids`)])
+    empty_plates <- setdiff(seq_len(plates_per_batch), plates_with_data)
+    
+    for (p in empty_plates) {
+      # Prefer moving a QC; if no QC exists, move a BLANK; otherwise skip
+      cand_qc   <- which(retval$Batch == i & retval$reserve_qc & !is.na(retval$`Submitted Sample Ids`))
+      cand_blank<- which(retval$Batch == i & retval$reserve_blank & !is.na(retval$`Submitted Sample Ids`))
+      mover <- c(cand_qc, cand_blank)
+      if (length(mover) > 0) {
+        mover <- mover[1L]
+        retval$Plate[mover]    <- p
+        retval$Position[mover] <- 1L
+        # flags no longer matter downstream; we won't reuse reserve_* after this
+      }
+    }
+  }
+  # --- end
+  
+  
+  # # PATCH
+  # # --- begin: ensure empty plates are represented by a placeholder row ---
+  # # Plates that would be lost after NA-filter (no non-NA Submitted Sample Ids)
+  # present <- retval %>%
+  #   dplyr::filter(!is.na(`Submitted Sample Ids`)) %>%
+  #   dplyr::distinct(Batch, Plate)
+  # 
+  # all_plates <- expand.grid(
+  #   Batch = unique(retval$Batch),
+  #   Plate = seq_len(plates_per_batch),
+  #   KEEP.OUT.ATTRS = FALSE,
+  #   stringsAsFactors = FALSE
+  # )
+  # 
+  # missing <- dplyr::anti_join(all_plates, present, by = c("Batch", "Plate"))
+  # 
+  # if (nrow(missing) > 0) {
+  #   # one lightweight stub row per empty plate
+  #   stub <- missing %>%
+  #     dplyr::mutate(
+  #       Position = 1L,
+  #       Project_ID = unique(sample_meta_data$Project_ID)[1],
+  #       `Submitted Sample Ids` = "EMPTY",
+  #       Matrix = NA_character_
+  #     )
+  #   
+  #   # Make columns align and append
+  #   retval <- dplyr::bind_rows(retval, stub)
+  # }
+  # # --- end: ensure empty plates are represented by a placeholder row ---
+  
+  
+  # PATCH
+  # --- begin: final arrange for plate ordering and factor levels for matrix
+  # keep plates in ascending order so unique(Plate) yields 1,2,3
+  retval <- retval %>%
+    dplyr::arrange(Batch, Plate, Position)
+  
+  # ensure Matrix is a factor with expected levels (even if some rows were BLANK/QC)
+  retval$Matrix <- factor(retval$Matrix, levels = levels(sample_meta_data$Matrix))
+  # --- end
+  
+  retval <- retval %>%
+    dplyr::select(Batch, Plate, Position, Project_ID, `Submitted Sample Ids`, Matrix) %>%
+    dplyr::filter(!is.na(`Submitted Sample Ids`))
 
 
   # write csv if desired
