@@ -114,7 +114,7 @@ server <- function(input, output, session, sample_data) {
     processed <- append_project_name(
       df = file_preprocessed(),
       project_name = input$project_name,  # repeats for all rows
-      col = "Project_Name",               # change if you want a different name
+      col = "Project_ID",                 # change if you want a different name
       overwrite = TRUE                    # or FALSE if you prefer to keep existing
     )
     
