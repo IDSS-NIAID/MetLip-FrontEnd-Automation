@@ -40,15 +40,13 @@ ui <- dashboardPage(
         fluidRow(
           box(
             title = "File Validation", status = "primary", solidHeader = TRUE, width = 12,
-            # NEW: user-entered project name
-            textInput("project_name", "Project name / ID (optional):", placeholder = "e.g., ABC123 or SmithLab_Proj"),
+            textInput("project_name", "Project name / ID:", placeholder = "e.g., ABC123"),
             actionButton("validate_file", "Validation Step"),
             div(style = "overflow-x: auto;"),
             DTOutput("validation_table")
           )
         )
-      )
-      ,
+      ),
       
       # define UI for generating plate meta data
       tabItem(tabName = "plate_meta",
