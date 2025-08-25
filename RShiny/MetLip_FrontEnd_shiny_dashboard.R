@@ -72,7 +72,7 @@ ui <- dashboardPage(
                       max = 20, 
                       step = 0.5,
                       width = "25%"),
-                    
+                    downloadButton("download_sequence_zip", "Download sequence ZIP"),
                     actionButton("generate_sequence", "Generate and Download Sequences"),
                     DTOutput("sequence_table")
           )
@@ -93,6 +93,8 @@ server <- function(input, output, session, sample_data) {
   processed_plate_data <- reactiveVal()
   sequence_data <- reactiveVal()
   
+  seq_paths <- reactiveVal(NULL)
+  seq_dir   <- reactiveVal(NULL)
   
   # logic for uploading the TAS File
   observeEvent(input$sample_file, {
@@ -158,17 +160,56 @@ server <- function(input, output, session, sample_data) {
   )
   
   
-  # logic corresponding to the generation of SciexOS sequence data
+  # # logic corresponding to the generation of SciexOS sequence data
+  # observeEvent(input$generate_sequence, {
+  #   req(processed_plate_data())
+  #   generate_sequence( 
+  #     processed_plate_data()$plate_loading,
+  #     processed_plate_data()$qc_plate_data,
+  #     processed_plate_data()$blank_plate_data,
+  #     processed_plate_data()$project_id,
+  #     injection_vol = input$injection_vol
+  #   ) # calls on our previously defined function                        
+  # })
+  
+  
+  # --- UPDATED: logic corresponding to the generation of SciexOS sequence data
   observeEvent(input$generate_sequence, {
     req(processed_plate_data())
-    generate_sequence( 
+    
+    td <- tempfile("seq_")
+    dir.create(td, recursive = TRUE)
+    
+    paths <- generate_sequence(
       processed_plate_data()$plate_loading,
       processed_plate_data()$qc_plate_data,
       processed_plate_data()$blank_plate_data,
-      processed_plate_data()$project_id,
-      injection_vol = input$injection_vol
-    ) # calls on our previously defined function                        
+      processed_plate_data()$project_id,      # if this is reactive elsewhere, use project_id()
+      injection_vol = input$injection_vol,
+      output_dir = td                         # <-- new arg
+    )
+    
+    validate(need(length(paths) > 0, "No sequence files were generated."))
+    seq_paths(paths)
+    seq_dir(td)
   })
+  
+  output$download_sequence_zip <- downloadHandler(
+    filename = function() {
+      pid <- processed_plate_data()$project_id
+      sprintf("Sequences_%s_%s.zip", format(Sys.Date(), "%Y%m%d"), pid)
+    },
+    content = function(file) {
+      req(seq_paths(), seq_dir())
+      if (requireNamespace("zip", quietly = TRUE)) {
+        zip::zipr(zipfile = file, files = seq_paths(), root = seq_dir())
+      } else {
+        old <- setwd(seq_dir()); on.exit(setwd(old), add = TRUE)
+        utils::zip(zipfile = file, files = basename(seq_paths()))
+      }
+    },
+    contentType = "application/zip"
+  )
 }
 
 shinyApp(ui, server)
