@@ -12,7 +12,7 @@
 #' append_project_name(df, "ABC123")
 #'
 #' @importFrom dplyr mutate
-append_project_name <- function(df, project_name, col = "Project_Name", overwrite = FALSE) {
+append_project_name <- function(df, project_name, col = "Project_ID", overwrite = FALSE) {
   stopifnot(is.data.frame(df))
   if (length(project_name) != 1L || !is.character(project_name))
     stop("`project_name` must be a length-1 character.", call. = FALSE)
