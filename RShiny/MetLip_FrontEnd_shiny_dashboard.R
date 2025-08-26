@@ -62,20 +62,36 @@ ui <- dashboardPage(
       
       
       # define UI for generating SciexOS sequence data
-      tabItem(tabName = "sequence_data",
-              fluidRow(
-                box(title = "Generate Sequence", status = "primary", solidHeader = TRUE, 
-                    numericInput(
-                      inputId = "injection_vol",
-                      label = "Injection Volume (uL)",
-                      value = 5,
-                      min = 2,
-                      max = 20, 
-                      step = 0.5,
-                      width = "25%"),
-                    downloadButton("download_sequence_zip", "Download sequence ZIP"),
-                    actionButton("generate_sequence", "Generate and Download Sequences"),
-                    DTOutput("sequence_table")
+      tabItem(
+        tabName = "sequence_data",
+        fluidRow(
+          box(
+            title = "Generate Sequence", status = "primary", solidHeader = TRUE, width = 12,
+            
+            # Controls row
+            div(
+              style = "display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;",
+              
+              # Injection volume
+              div(style = "min-width:220px;",
+                  numericInput(
+                    inputId = "injection_vol",
+                    label   = "Injection Volume (µL)",
+                    value   = 5, min = 2, max = 20, step = 0.5, width = "100%"
+                  )
+              ),
+              
+              # Generate (writes CSVs to a temp dir on the server)
+              actionButton("generate_sequence", "Generate sequences"),
+              
+              # Download ZIP (streams the zipped CSVs to the browser)
+              downloadButton("download_sequence_zip", "Download sequence ZIP")
+            ),
+            
+            tags$small("Step 1: Generate sequences. Step 2: Download the ZIP."),
+            tags$hr()
+            
+
           )
         )
       )
