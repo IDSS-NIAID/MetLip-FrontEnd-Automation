@@ -176,26 +176,28 @@ server <- function(input, output, session, sample_data) {
   
   
   # --- UPDATED: logic corresponding to the generation of SciexOS sequence data
-  observeEvent(input$generate_sequence, {
+ observeEvent(input$generate_sequence, {
     req(processed_plate_data())
-    
+
     td <- tempfile("seq_")
     dir.create(td, recursive = TRUE)
-    
+
     paths <- generate_sequence(
       processed_plate_data()$plate_loading,
       processed_plate_data()$qc_plate_data,
       processed_plate_data()$blank_plate_data,
-      processed_plate_data()$project_id,      # if this is reactive elsewhere, use project_id()
+      processed_plate_data()$project_id,
       injection_vol = input$injection_vol,
-      output_dir = td                         # <-- new arg
+      output_dir    = td
     )
-    
+
     validate(need(length(paths) > 0, "No sequence files were generated."))
     seq_paths(paths)
     seq_dir(td)
+    showNotification(sprintf("Generated %d file(s). Ready to download.", length(paths)), type = "message")
   })
-  
+
+  # Download ZIP of generated sequence files
   output$download_sequence_zip <- downloadHandler(
     filename = function() {
       pid <- processed_plate_data()$project_id
@@ -203,12 +205,20 @@ server <- function(input, output, session, sample_data) {
     },
     content = function(file) {
       req(seq_paths(), seq_dir())
-      if (requireNamespace("zip", quietly = TRUE)) {
-        zip::zipr(zipfile = file, files = seq_paths(), root = seq_dir())
-      } else {
-        old <- setwd(seq_dir()); on.exit(setwd(old), add = TRUE)
-        utils::zip(zipfile = file, files = basename(seq_paths()))
+
+      # Use relative names with root= for zip::zipr
+      rel  <- basename(seq_paths())
+      full <- file.path(seq_dir(), rel)
+      if (!all(file.exists(full))) {
+        stop("One or more sequence files are missing; please regenerate before downloading.")
       }
+
+      # Create zip in a temp file, then stream to browser
+      tmpzip <- tempfile(fileext = ".zip")
+      zip::zipr(zipfile = tmpzip, files = rel, root = seq_dir())
+
+      ok <- file.copy(tmpzip, file, overwrite = TRUE)
+      if (!ok) stop("Failed to stream ZIP to client.")
     },
     contentType = "application/zip"
   )
