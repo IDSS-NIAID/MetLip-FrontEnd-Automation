@@ -218,6 +218,9 @@ server <- function(input, output, session, sample_data) {
   # --- UPDATED: logic corresponding to the generation of SciexOS sequence data
  observeEvent(input$generate_sequence, {
     req(processed_plate_data())
+   
+    # show "Waiting" until done
+    sequence_ready(FALSE)
 
     td <- tempfile("seq_")
     dir.create(td, recursive = TRUE)
@@ -234,7 +237,11 @@ server <- function(input, output, session, sample_data) {
     validate(need(length(paths) > 0, "No sequence files were generated."))
     seq_paths(paths)
     seq_dir(td)
-    showNotification(sprintf("Generated %d file(s). Ready to download.", length(paths)), type = "message")
+    
+    # flip status to Complete and toast
+    sequence_ready(TRUE)
+    showNotification(sprintf("Generated %d file(s). Click “Download sequence ZIP”.", length(paths)),
+                     type = "message", duration = 5)
   })
 
   # Download ZIP of generated sequence files
