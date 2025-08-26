@@ -14,7 +14,7 @@ if(FALSE)
   devtools::install_github('IDSS-NIAID/MetLip-FrontEnd-Automation')
 library(MetLipAutomation)
 
-
+shinyjs::useShinyjs()
 
 # define the UI (User Interface)
 ui <- dashboardPage(
@@ -85,7 +85,10 @@ ui <- dashboardPage(
               actionButton("generate_sequence", "Generate sequences"),
               
               # Download ZIP (streams the zipped CSVs to the browser)
-              downloadButton("download_sequence_zip", "Download sequence ZIP")
+              downloadButton("download_sequence_zip", "Download sequence ZIP"),
+              
+              # Update: status pill (rendered from server)
+              uiOutput("sequence_status")
             ),
             
             tags$small("Step 1: Generate sequences. Step 2: Download the ZIP."),
