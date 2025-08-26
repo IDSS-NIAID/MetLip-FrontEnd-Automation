@@ -92,7 +92,8 @@ ui <- dashboardPage(
             ),
             
             tags$small("Step 1: Generate sequences. Step 2: Download the ZIP."),
-            tags$hr()
+            tags$hr(),
+            div(style = "overflow-x:auto;", DTOutput("sequence_table"))
             
 
           )
