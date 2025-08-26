@@ -111,6 +111,7 @@ server <- function(input, output, session, sample_data) {
   })
   
   
+  # logic for valiudation step
   observeEvent(input$validate_file, {
     req(file_preprocessed(), nzchar(trimws(input$project_name)))
     
