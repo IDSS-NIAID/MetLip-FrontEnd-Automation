@@ -116,6 +116,9 @@ server <- function(input, output, session, sample_data) {
   seq_paths <- reactiveVal(NULL)
   seq_dir   <- reactiveVal(NULL)
   
+  # Update: ready flag
+  sequence_ready <- reactiveVal(FALSE)
+  
   # logic for uploading the TAS File
   observeEvent(input$sample_file, {
     req(input$sample_file)
@@ -192,6 +195,23 @@ server <- function(input, output, session, sample_data) {
   #     injection_vol = input$injection_vol
   #   ) # calls on our previously defined function                        
   # })
+  
+  
+  # --- Update: render the status pill
+  output$sequence_status <- renderUI({
+    if (isTRUE(sequence_ready())) {
+      tags$span(
+        class = "text-success",
+        style = "font-weight:600; display:inline-flex; align-items:center; gap:6px;",
+        icon("check-circle"), "Complete"
+      )
+    } else {
+      tags$span(
+        style = "color:#6c757d; display:inline-flex; align-items:center; gap:6px;",
+        icon("hourglass-half"), "Waiting"
+      )
+    }
+  })
   
   
   # --- UPDATED: logic corresponding to the generation of SciexOS sequence data
