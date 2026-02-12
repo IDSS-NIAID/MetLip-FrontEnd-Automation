@@ -33,7 +33,7 @@ process_plate_data <- function(plate_data, acquired_samples) {
     rename(Submitted_Sample_ID = `Submitted Sample Ids`) %>%
     left_join(plate_data, join_by(Project_ID, Submitted_Sample_ID, Matrix)) %>% 
     arrange(desc(MS_method), Batch, Plate, Position) %>% 
-    select(Project_ID, Date_Processed, Submitted_Sample_ID, `Submitted Sample Names`, Matrix, MS_method, Acquired_Sample_Name, Batch, Plate, Position, Notes)
+    select(Project_ID, Date_Processed, Submitted_Sample_ID, `Submitted Sample Names`, Acquired_Sample_ID, Matrix, MS_method, Batch, Plate, Position, Notes)
   
   return(list(plate_loading = plate_loading, qc_plate_data = qc_plate_data, blank_plate_data = blank_plate_data, project_id = project_id))
 }
