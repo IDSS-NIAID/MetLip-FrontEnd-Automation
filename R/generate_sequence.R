@@ -18,7 +18,7 @@
 generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, project_id, injection_vol, output_dir = getwd()) {
   # take care of annoying no visible binding notes
   if(FALSE)
-    MS_method <- Randomization <- Matrix <- Batch <- Acquired_Sample_Name <- Run_number <-
+    MS_method <- Randomization <- Matrix <- Batch <- Acquired_Sample_ID <- Run_number <-
       Folder_name <- Run_name <- Plate <- Injection_vol <- Data_file <- NULL
   
   # ensure output dir exists & init collector
@@ -64,7 +64,7 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
             Project_ID = project_id, 
             MS_method = ms_method, 
             Submitted_Sample_ID = sprintf("Blank-%02d", qc_blank_counter),
-            Acquired_Sample_Name = sprintf("Blank-%02d-%s", qc_blank_counter, mtx), 
+            Acquired_Sample_ID = sprintf("Blank-%02d-%s", qc_blank_counter, mtx), 
             Matrix = mtx, 
             Batch = batch, 
             Plate = unique(blank_plate_data_isl$Plate), 
@@ -79,7 +79,7 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
           Project_ID = project_id, 
           MS_method = ms_method, 
           Submitted_Sample_ID = sprintf("QC-%02d", qc_blank_counter),
-          Acquired_Sample_Name = sprintf("QC-%02d-%s", qc_blank_counter, mtx), 
+          Acquired_Sample_ID = sprintf("QC-%02d-%s", qc_blank_counter, mtx), 
           Matrix = mtx, 
           Batch = batch, 
           Plate = unique(qc_plate_data_isl$Plate), 
@@ -92,7 +92,7 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
           Project_ID = project_id, 
           MS_method = ms_method, 
           Submitted_Sample_ID = sprintf("Blank-%02d", qc_blank_counter),
-          Acquired_Sample_Name = sprintf("Blank-%02d-%s", qc_blank_counter, mtx), 
+          Acquired_Sample_ID = sprintf("Blank-%02d-%s", qc_blank_counter, mtx), 
           Matrix = mtx, 
           Batch = batch, 
           Plate = unique(blank_plate_data_isl$Plate), 
@@ -114,7 +114,7 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
             Project_ID = project_id, 
             MS_method = ms_method, 
             Submitted_Sample_ID = sprintf("QC-%02d", qc_blank_counter),
-            Acquired_Sample_Name = sprintf("QC-%02d-%s", qc_blank_counter, mtx), 
+            Acquired_Sample_ID = sprintf("QC-%02d-%s", qc_blank_counter, mtx), 
             Matrix = mtx, 
             Batch = batch, 
             Plate = unique(qc_plate_data_isl$Plate), 
@@ -127,7 +127,7 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
             Project_ID = project_id, 
             MS_method = ms_method, 
             Submitted_Sample_ID = sprintf("Blank-%02d", qc_blank_counter),
-            Acquired_Sample_Name = sprintf("Blank-%02d-%s", qc_blank_counter, mtx), 
+            Acquired_Sample_ID = sprintf("Blank-%02d-%s", qc_blank_counter, mtx), 
             Matrix = mtx, 
             Batch = batch, 
             Plate = unique(blank_plate_data_isl$Plate), 
@@ -151,7 +151,7 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
           Project_ID = project_id, 
           MS_method = ms_method, 
           Submitted_Sample_ID = sprintf("QC-%02d", qc_blank_counter),
-          Acquired_Sample_Name = sprintf("QC-%02d-%s", qc_blank_counter, mtx), 
+          Acquired_Sample_ID = sprintf("QC-%02d-%s", qc_blank_counter, mtx), 
           Matrix = mtx, 
           Batch = batch, 
           Plate = unique(qc_plate_data_isl$Plate), 
@@ -164,7 +164,7 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
           Project_ID = project_id, 
           MS_method = ms_method, 
           Submitted_Sample_ID = sprintf("Blank-%02d", qc_blank_counter),
-          Acquired_Sample_Name = sprintf("Blank-%02d-%s", qc_blank_counter, mtx), 
+          Acquired_Sample_ID = sprintf("Blank-%02d-%s", qc_blank_counter, mtx), 
           Matrix = mtx, 
           Batch = batch, 
           Plate = unique(blank_plate_data_isl$Plate), 
@@ -179,12 +179,12 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
           dplyr::mutate(
             Run_number = paste("Run", row_number(), sep = "-"),
             Folder_name = paste(format(Sys.Date(), "%Y%m%d"), project_id, ms_method, sep = "_"),
-            Run_name = paste(project_id, Acquired_Sample_Name, Run_number, sep = "_"),
+            Run_name = Acquired_Sample_ID,
             Data_file = paste(Folder_name, "\\", Run_name, sep = "")
           ) %>%
-          dplyr::select(Acquired_Sample_Name, MS_method, Plate, Position, Injection_vol, Matrix, Data_file) %>%
+          dplyr::select(Acquired_Sample_ID, MS_method, Plate, Position, Injection_vol, Matrix, Data_file) %>%
           dplyr::rename(
-            `Sample Name` = Acquired_Sample_Name, 
+            `Sample Name` = Acquired_Sample_ID, 
             `MS method` = MS_method, 
             `Plate Position` = Plate, 
             `Vial Position` = Position,
