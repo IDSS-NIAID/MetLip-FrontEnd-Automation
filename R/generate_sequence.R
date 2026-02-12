@@ -46,6 +46,9 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
       # Iterate over unique batches
       for (batch in unique(select_method$Batch)) {
         
+        # Filter samples to only those in the current batch
+        batch_samples <- isl_temp %>% filter(Batch == batch) 
+        
         # Filter QC and BLANK samples for the current batch
         qc_plate_data_isl <- qc_plate_data %>% filter(Batch == batch)
         blank_plate_data_isl <- blank_plate_data %>% filter(Batch == batch)
