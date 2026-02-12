@@ -21,11 +21,9 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
     MS_method <- Randomization <- Matrix <- Batch <- Acquired_Sample_Name <- Run_number <-
       Folder_name <- Run_name <- Plate <- Injection_vol <- Data_file <- NULL
   
-  # PATCH
-  # --- begin: ensure output dir exists & init collector
+  # ensure output dir exists & init collector
   if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   written_paths <- character(0)
-  # --- end
   
   
   # Iterate over unique MS methods in plate_loading
@@ -52,45 +50,126 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
         qc_plate_data_isl <- qc_plate_data %>% filter(Batch == batch)
         blank_plate_data_isl <- blank_plate_data %>% filter(Batch == batch)
         
-        # Ensure QC and BLANK samples appear at the start
-        new_qc_row <- tibble(
-          Project_ID = project_id, MS_method = ms_method, Submitted_Sample_ID = "QC-0", 
-          Acquired_Sample_Name = paste("QC", mtx, sep = "-"), Matrix = mtx, Batch = batch, 
-          Plate = unique(qc_plate_data_isl$Plate), Position = unique(qc_plate_data_isl$Position), 
+        # Initialize counter for QC and Blank injection numbering
+        qc_blank_counter <- 0
+        
+        # === ADD 4 BLANK RUNS AT THE VERY BEGINNING ===
+        initial_blanks <- list()
+        for (i in 1:4) {
+          qc_blank_counter <- qc_blank_counter + 1
+          initial_blanks[[i]] <- tibble(
+            Project_ID = project_id, 
+            MS_method = ms_method, 
+            Submitted_Sample_ID = sprintf("Blank-%02d", qc_blank_counter),
+            Acquired_Sample_Name = sprintf("Blank-%02d-%s", qc_blank_counter, mtx), 
+            Matrix = mtx, 
+            Batch = batch, 
+            Plate = unique(blank_plate_data_isl$Plate), 
+            Position = unique(blank_plate_data_isl$Position), 
+            Injection_vol = injection_vol
+          )
+        }
+        
+        # === ADD INITIAL QC AND BLANK (after the 4 blanks) ===
+        qc_blank_counter <- qc_blank_counter + 1
+        initial_qc <- tibble(
+          Project_ID = project_id, 
+          MS_method = ms_method, 
+          Submitted_Sample_ID = sprintf("QC-%02d", qc_blank_counter),
+          Acquired_Sample_Name = sprintf("QC-%02d-%s", qc_blank_counter, mtx), 
+          Matrix = mtx, 
+          Batch = batch, 
+          Plate = unique(qc_plate_data_isl$Plate), 
+          Position = unique(qc_plate_data_isl$Position), 
           Injection_vol = injection_vol
         )
         
-        new_blank_row <- tibble(
-          Project_ID = project_id, MS_method = ms_method, Submitted_Sample_ID = "Blank-0", 
-          Acquired_Sample_Name = paste("Blank", mtx, sep = "-"), Matrix = mtx, Batch = batch, 
-          Plate = unique(blank_plate_data_isl$Plate), Position = unique(blank_plate_data_isl$Position), 
+        qc_blank_counter <- qc_blank_counter + 1
+        initial_blank <- tibble(
+          Project_ID = project_id, 
+          MS_method = ms_method, 
+          Submitted_Sample_ID = sprintf("Blank-%02d", qc_blank_counter),
+          Acquired_Sample_Name = sprintf("Blank-%02d-%s", qc_blank_counter, mtx), 
+          Matrix = mtx, 
+          Batch = batch, 
+          Plate = unique(blank_plate_data_isl$Plate), 
+          Position = unique(blank_plate_data_isl$Position), 
           Injection_vol = injection_vol
         )
         
-        # Combine QC, BLANK, and sample data into full sequence
-        full_sequence <- bind_rows(new_qc_row, new_blank_row, isl_temp)
-        insert_counter <- 0
+        # Combine initial blanks + QC + blank with sample data
+        full_sequence <- bind_rows(initial_blanks, initial_qc, initial_blank, isl_temp)
         
-        # Insert QC and BLANK at intervals of 10
-        for (i in seq(10, nrow(full_sequence), by = 10)) {
-          insert_counter <- insert_counter + 1
+        # === INSERT QC AND BLANK AT INTERVALS OF 10 ===
+        # Start inserting after initial setup (row 6 onwards)
+        insert_positions <- seq(6 + 10, nrow(full_sequence), by = 10)
+        
+        for (insert_pos in insert_positions) {
+          qc_blank_counter <- qc_blank_counter + 1
           
           new_qc_row <- tibble(
-            Project_ID = project_id, MS_method = ms_method, Submitted_Sample_ID = paste("QC", insert_counter, sep = "-"),
-            Acquired_Sample_Name = paste("QC", mtx, sep = "-"), Matrix = mtx, Batch = batch, 
-            Plate = unique(qc_plate_data_isl$Plate), Position = unique(qc_plate_data_isl$Position), Injection_vol = injection_vol
+            Project_ID = project_id, 
+            MS_method = ms_method, 
+            Submitted_Sample_ID = sprintf("QC-%02d", qc_blank_counter),
+            Acquired_Sample_Name = sprintf("QC-%02d-%s", qc_blank_counter, mtx), 
+            Matrix = mtx, 
+            Batch = batch, 
+            Plate = unique(qc_plate_data_isl$Plate), 
+            Position = unique(qc_plate_data_isl$Position), 
+            Injection_vol = injection_vol
           )
           
+          qc_blank_counter <- qc_blank_counter + 1
           new_blank_row <- tibble(
-            Project_ID = project_id, MS_method = ms_method, Submitted_Sample_ID = paste("Blank", insert_counter, sep = "-"),
-            Acquired_Sample_Name = paste("Blank", mtx, sep = "-"), Matrix = mtx, Batch = batch, 
-            Plate = unique(blank_plate_data_isl$Plate), Position = unique(blank_plate_data_isl$Position), Injection_vol = injection_vol
+            Project_ID = project_id, 
+            MS_method = ms_method, 
+            Submitted_Sample_ID = sprintf("Blank-%02d", qc_blank_counter),
+            Acquired_Sample_Name = sprintf("Blank-%02d-%s", qc_blank_counter, mtx), 
+            Matrix = mtx, 
+            Batch = batch, 
+            Plate = unique(blank_plate_data_isl$Plate), 
+            Position = unique(blank_plate_data_isl$Position), 
+            Injection_vol = injection_vol
           )
           
           # Insert QC and BLANK at the specified interval
-          full_sequence <- bind_rows(full_sequence[1:i, ], new_qc_row, new_blank_row, full_sequence[(i+1):nrow(full_sequence), ])
+          full_sequence <- bind_rows(
+            full_sequence[1:insert_pos, ], 
+            new_qc_row, 
+            new_blank_row, 
+            full_sequence[(insert_pos+1):nrow(full_sequence), ]
+          )
           
         } # <- end interval insert loop
+        
+        # === ADD FINAL QC AND BLANK AT THE VERY END ===
+        qc_blank_counter <- qc_blank_counter + 1
+        final_qc <- tibble(
+          Project_ID = project_id, 
+          MS_method = ms_method, 
+          Submitted_Sample_ID = sprintf("QC-%02d", qc_blank_counter),
+          Acquired_Sample_Name = sprintf("QC-%02d-%s", qc_blank_counter, mtx), 
+          Matrix = mtx, 
+          Batch = batch, 
+          Plate = unique(qc_plate_data_isl$Plate), 
+          Position = unique(qc_plate_data_isl$Position), 
+          Injection_vol = injection_vol
+        )
+        
+        qc_blank_counter <- qc_blank_counter + 1
+        final_blank <- tibble(
+          Project_ID = project_id, 
+          MS_method = ms_method, 
+          Submitted_Sample_ID = sprintf("Blank-%02d", qc_blank_counter),
+          Acquired_Sample_Name = sprintf("Blank-%02d-%s", qc_blank_counter, mtx), 
+          Matrix = mtx, 
+          Batch = batch, 
+          Plate = unique(blank_plate_data_isl$Plate), 
+          Position = unique(blank_plate_data_isl$Position), 
+          Injection_vol = injection_vol
+        )
+        
+        full_sequence <- bind_rows(full_sequence, final_qc, final_blank)
         
         # Prepare output file structure
         out_isl <- full_sequence %>%
@@ -102,15 +181,16 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
           ) %>%
           dplyr::select(Acquired_Sample_Name, MS_method, Plate, Position, Injection_vol, Matrix, Data_file) %>%
           dplyr::rename(
-            `Sample Name` = Acquired_Sample_Name, `MS method` = MS_method, `Plate Position` = Plate, `Vial Position` = Position,
-            `Injection Volume` = Injection_vol, `Sample Type` = Matrix, `Data File` = Data_file
+            `Sample Name` = Acquired_Sample_Name, 
+            `MS method` = MS_method, 
+            `Plate Position` = Plate, 
+            `Vial Position` = Position,
+            `Injection Volume` = Injection_vol, 
+            `Sample Type` = Matrix, 
+            `Data File` = Data_file
           )
         
         # Export the sequence as a CSV file
-        #write.csv(out_isl, paste(Sys.Date(), project_id, ms_method, "Batch", batch, "Sequence.csv", sep = "_"), row.names = FALSE)
-        
-        # PATCH
-        # --- begin: write into output_dir and record path
         fname <- paste(Sys.Date(), project_id, ms_method, "Batch", batch, "Sequence.csv", sep = "_")
         fpath <- file.path(output_dir, fname)
         utils::write.csv(out_isl, fpath, row.names = FALSE)
@@ -120,7 +200,7 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
     }   # end for matrix
   }     # end for method
   
-  invisible(written_paths)  # --- end: allow caller to zip/serve these files
+  invisible(written_paths)
   
- }
+}
 
