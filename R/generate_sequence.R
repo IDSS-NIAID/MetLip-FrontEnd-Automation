@@ -105,7 +105,11 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data, pr
         
         # === INSERT QC AND BLANK AT INTERVALS OF 10 ===
         # Start inserting after initial setup (row 6 onwards)
-        insert_positions <- seq(6 + 10, nrow(full_sequence), by = 10)
+        if (nrow(full_sequence) >= 16) {
+          insert_positions <- seq(6 + 10, nrow(full_sequence), by = 10)
+        } else {
+          insert_positions <- integer(0)
+        }
         
         for (insert_pos in insert_positions) {
           qc_blank_counter <- qc_blank_counter + 1
