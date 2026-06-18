@@ -11,7 +11,7 @@
 #' @param output_dir Directory to write CSV files to. Defaults to getwd(); on Posit Connect use tempdir().
 #' @return (Invisibly) a character vector of file paths written.
 #' @export
-#' @importFrom dplyr arrange bind_rows filter mutate n rename select tibble ungroup row_number
+#' @importFrom dplyr arrange bind_rows filter mutate n rename select slice tibble ungroup row_number desc
 #' @importFrom magrittr %>%
 #' @importFrom stats runif
 #' @importFrom utils write.csv
@@ -63,9 +63,22 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
         # Skip empty combinations
         if (nrow(batch_samples) == 0) next
         
-        # Filter QC and BLANK samples for the current batch
-        qc_plate_data_isl <- qc_plate_data %>% filter(Batch == batch)
+        # Filter QC and BLANK samples for the current batch.
+        # Select the position at the very END of the last plate (highest plate,
+        # highest vial). This guarantees a single QC and single blank vial,
+        # ignoring any stray earlier-plate positions.
+        qc_plate_data_isl    <- qc_plate_data %>% filter(Batch == batch)
         blank_plate_data_isl <- blank_plate_data %>% filter(Batch == batch)
+        
+        qc_sel <- qc_plate_data_isl %>%
+          arrange(desc(Plate), desc(Position)) %>% dplyr::slice(1)
+        blank_sel <- blank_plate_data_isl %>%
+          arrange(desc(Plate), desc(Position)) %>% dplyr::slice(1)
+        
+        qc_plate       <- qc_sel$Plate
+        qc_position    <- qc_sel$Position
+        blank_plate    <- blank_sel$Plate
+        blank_position <- blank_sel$Position
         
         # Separate counters so QC and Blank each number sequentially
         qc_counter    <- 0
@@ -82,8 +95,8 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
             Acquired_Sample_ID = sprintf("Blank-%02d-%s", blank_counter, mtx),
             Matrix = mtx,
             Batch = batch,
-            Plate = unique(blank_plate_data_isl$Plate),
-            Position = unique(blank_plate_data_isl$Position),
+            Plate = blank_plate,
+            Position = blank_position,
             Injection_vol = injection_vol
           )
         }
@@ -97,8 +110,8 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
           Acquired_Sample_ID = sprintf("QC-%02d-%s", qc_counter, mtx),
           Matrix = mtx,
           Batch = batch,
-          Plate = unique(qc_plate_data_isl$Plate),
-          Position = unique(qc_plate_data_isl$Position),
+          Plate = qc_plate,
+          Position = qc_position,
           Injection_vol = injection_vol
         )
         
@@ -110,8 +123,8 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
           Acquired_Sample_ID = sprintf("Blank-%02d-%s", blank_counter, mtx),
           Matrix = mtx,
           Batch = batch,
-          Plate = unique(blank_plate_data_isl$Plate),
-          Position = unique(blank_plate_data_isl$Position),
+          Plate = blank_plate,
+          Position = blank_position,
           Injection_vol = injection_vol
         )
         
@@ -139,8 +152,8 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
             Acquired_Sample_ID = sprintf("QC-%02d-%s", qc_counter, mtx),
             Matrix = mtx,
             Batch = batch,
-            Plate = unique(qc_plate_data_isl$Plate),
-            Position = unique(qc_plate_data_isl$Position),
+            Plate = qc_plate,
+            Position = qc_position,
             Injection_vol = injection_vol
           )
           
@@ -152,8 +165,8 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
             Acquired_Sample_ID = sprintf("Blank-%02d-%s", blank_counter, mtx),
             Matrix = mtx,
             Batch = batch,
-            Plate = unique(blank_plate_data_isl$Plate),
-            Position = unique(blank_plate_data_isl$Position),
+            Plate = blank_plate,
+            Position = blank_position,
             Injection_vol = injection_vol
           )
           
@@ -184,8 +197,8 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
           Acquired_Sample_ID = sprintf("QC-%02d-%s", qc_counter, mtx),
           Matrix = mtx,
           Batch = batch,
-          Plate = unique(qc_plate_data_isl$Plate),
-          Position = unique(qc_plate_data_isl$Position),
+          Plate = qc_plate,
+          Position = qc_position,
           Injection_vol = injection_vol
         )
         
@@ -197,8 +210,8 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
           Acquired_Sample_ID = sprintf("Blank-%02d-%s", blank_counter, mtx),
           Matrix = mtx,
           Batch = batch,
-          Plate = unique(blank_plate_data_isl$Plate),
-          Position = unique(blank_plate_data_isl$Position),
+          Plate = blank_plate,
+          Position = blank_position,
           Injection_vol = injection_vol
         )
         
