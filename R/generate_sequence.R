@@ -67,18 +67,19 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
         qc_plate_data_isl <- qc_plate_data %>% filter(Batch == batch)
         blank_plate_data_isl <- blank_plate_data %>% filter(Batch == batch)
         
-        # Initialize counter for QC and Blank injection numbering
-        qc_blank_counter <- 0
+        # Separate counters so QC and Blank each number sequentially
+        qc_counter    <- 0
+        blank_counter <- 0
         
         # === ADD 4 BLANK RUNS AT THE VERY BEGINNING ===
         initial_blanks <- list()
         for (i in 1:4) {
-          qc_blank_counter <- qc_blank_counter + 1
+          blank_counter <- blank_counter + 1
           initial_blanks[[i]] <- tibble(
             Project_ID = project_id,
             MS_method = ms_method,
-            Submitted_Sample_ID = sprintf("Blank-%02d", qc_blank_counter),
-            Acquired_Sample_ID = sprintf("Blank-%02d-%s", qc_blank_counter, mtx),
+            Submitted_Sample_ID = sprintf("Blank-%02d", blank_counter),
+            Acquired_Sample_ID = sprintf("Blank-%02d-%s", blank_counter, mtx),
             Matrix = mtx,
             Batch = batch,
             Plate = unique(blank_plate_data_isl$Plate),
@@ -88,12 +89,12 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
         }
         
         # === ADD INITIAL QC AND BLANK (after the 4 blanks) ===
-        qc_blank_counter <- qc_blank_counter + 1
+        qc_counter <- qc_counter + 1
         initial_qc <- tibble(
           Project_ID = project_id,
           MS_method = ms_method,
-          Submitted_Sample_ID = sprintf("QC-%02d", qc_blank_counter),
-          Acquired_Sample_ID = sprintf("QC-%02d-%s", qc_blank_counter, mtx),
+          Submitted_Sample_ID = sprintf("QC-%02d", qc_counter),
+          Acquired_Sample_ID = sprintf("QC-%02d-%s", qc_counter, mtx),
           Matrix = mtx,
           Batch = batch,
           Plate = unique(qc_plate_data_isl$Plate),
@@ -101,12 +102,12 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
           Injection_vol = injection_vol
         )
         
-        qc_blank_counter <- qc_blank_counter + 1
+        blank_counter <- blank_counter + 1
         initial_blank <- tibble(
           Project_ID = project_id,
           MS_method = ms_method,
-          Submitted_Sample_ID = sprintf("Blank-%02d", qc_blank_counter),
-          Acquired_Sample_ID = sprintf("Blank-%02d-%s", qc_blank_counter, mtx),
+          Submitted_Sample_ID = sprintf("Blank-%02d", blank_counter),
+          Acquired_Sample_ID = sprintf("Blank-%02d-%s", blank_counter, mtx),
           Matrix = mtx,
           Batch = batch,
           Plate = unique(blank_plate_data_isl$Plate),
@@ -118,22 +119,24 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
         full_sequence <- bind_rows(initial_blanks, initial_qc, initial_blank, batch_samples)
         
         # === INSERT QC AND BLANK AT INTERVALS OF 10 ===
-        # Start inserting after initial setup (row 6 onwards)
-        # Guard against small batches where nrow(full_sequence) < 16
+        # Positions are computed on the original length; `offset` accounts for the
+        # 2 rows added each iteration so later inserts stay aligned.
         if (nrow(full_sequence) >= 16) {
           insert_positions <- seq(6 + 10, nrow(full_sequence), by = 10)
         } else {
           insert_positions <- integer(0)
         }
         
+        offset <- 0
         for (insert_pos in insert_positions) {
-          qc_blank_counter <- qc_blank_counter + 1
+          adjusted_pos <- insert_pos + offset
           
+          qc_counter <- qc_counter + 1
           new_qc_row <- tibble(
             Project_ID = project_id,
             MS_method = ms_method,
-            Submitted_Sample_ID = sprintf("QC-%02d", qc_blank_counter),
-            Acquired_Sample_ID = sprintf("QC-%02d-%s", qc_blank_counter, mtx),
+            Submitted_Sample_ID = sprintf("QC-%02d", qc_counter),
+            Acquired_Sample_ID = sprintf("QC-%02d-%s", qc_counter, mtx),
             Matrix = mtx,
             Batch = batch,
             Plate = unique(qc_plate_data_isl$Plate),
@@ -141,12 +144,12 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
             Injection_vol = injection_vol
           )
           
-          qc_blank_counter <- qc_blank_counter + 1
+          blank_counter <- blank_counter + 1
           new_blank_row <- tibble(
             Project_ID = project_id,
             MS_method = ms_method,
-            Submitted_Sample_ID = sprintf("Blank-%02d", qc_blank_counter),
-            Acquired_Sample_ID = sprintf("Blank-%02d-%s", qc_blank_counter, mtx),
+            Submitted_Sample_ID = sprintf("Blank-%02d", blank_counter),
+            Acquired_Sample_ID = sprintf("Blank-%02d-%s", blank_counter, mtx),
             Matrix = mtx,
             Batch = batch,
             Plate = unique(blank_plate_data_isl$Plate),
@@ -154,23 +157,31 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
             Injection_vol = injection_vol
           )
           
-          # Insert QC and BLANK at the specified interval
+          # Safe tail slice — avoids reverse-range duplication when at the end
+          tail_rows <- if (adjusted_pos < nrow(full_sequence)) {
+            full_sequence[(adjusted_pos + 1):nrow(full_sequence), ]
+          } else {
+            full_sequence[0, ]
+          }
+          
+          # Insert QC and BLANK at the adjusted interval
           full_sequence <- bind_rows(
-            full_sequence[1:insert_pos, ],
+            full_sequence[1:adjusted_pos, ],
             new_qc_row,
             new_blank_row,
-            full_sequence[(insert_pos+1):nrow(full_sequence), ]
+            tail_rows
           )
           
+          offset <- offset + 2
         } # <- end interval insert loop
         
         # === ADD FINAL QC AND BLANK AT THE VERY END ===
-        qc_blank_counter <- qc_blank_counter + 1
+        qc_counter <- qc_counter + 1
         final_qc <- tibble(
           Project_ID = project_id,
           MS_method = ms_method,
-          Submitted_Sample_ID = sprintf("QC-%02d", qc_blank_counter),
-          Acquired_Sample_ID = sprintf("QC-%02d-%s", qc_blank_counter, mtx),
+          Submitted_Sample_ID = sprintf("QC-%02d", qc_counter),
+          Acquired_Sample_ID = sprintf("QC-%02d-%s", qc_counter, mtx),
           Matrix = mtx,
           Batch = batch,
           Plate = unique(qc_plate_data_isl$Plate),
@@ -178,12 +189,12 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
           Injection_vol = injection_vol
         )
         
-        qc_blank_counter <- qc_blank_counter + 1
+        blank_counter <- blank_counter + 1
         final_blank <- tibble(
           Project_ID = project_id,
           MS_method = ms_method,
-          Submitted_Sample_ID = sprintf("Blank-%02d", qc_blank_counter),
-          Acquired_Sample_ID = sprintf("Blank-%02d-%s", qc_blank_counter, mtx),
+          Submitted_Sample_ID = sprintf("Blank-%02d", blank_counter),
+          Acquired_Sample_ID = sprintf("Blank-%02d-%s", blank_counter, mtx),
           Matrix = mtx,
           Batch = batch,
           Plate = unique(blank_plate_data_isl$Plate),
