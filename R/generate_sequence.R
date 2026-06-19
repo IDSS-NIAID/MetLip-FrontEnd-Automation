@@ -9,6 +9,7 @@
 #' @param injection_vol Numeric value specifying the injection volume.
 #' @param lc_methods Named character vector mapping each MS method to its LC method (e.g. c(TCMU = "HILIC_pos")). Optional.
 #' @param qc_blank_interval Integer. Insert a QC + blank after every N samples. Default 10.
+#' @param group_by_cols Character vector of column names to randomize within. Empty = simple shuffle of all samples in the batch. When supplied, the order of groups is shuffled AND samples within each group are shuffled.
 #' @param qc_plate_override Optional. Override the QC plate number.
 #' @param qc_position_override Optional. Override the QC vial position.
 #' @param blank_plate_override Optional. Override the blank plate number.
@@ -16,7 +17,7 @@
 #' @param output_dir Directory to write CSV files to. Defaults to getwd(); on Posit Connect use tempdir().
 #' @return (Invisibly) a character vector of file paths written.
 #' @export
-#' @importFrom dplyr arrange bind_rows filter mutate n rename select slice tibble ungroup row_number desc
+#' @importFrom dplyr arrange bind_rows filter mutate n rename select slice tibble ungroup row_number desc across all_of distinct left_join
 #' @importFrom magrittr %>%
 #' @importFrom stats runif
 #' @importFrom utils write.csv
@@ -25,11 +26,16 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
                               project_id, injection_vol,
                               lc_methods = character(),
                               qc_blank_interval = 10,
+                              group_by_cols = character(),
                               qc_plate_override       = NULL,
                               qc_position_override    = NULL,
                               blank_plate_override    = NULL,
                               blank_position_override = NULL,
                               output_dir = getwd()) {
+  
+  # Fixed seed so the same data + settings always produce the same sequence
+  set.seed(3.141592653)
+  
   # take care of annoying no visible binding notes
   if(FALSE)
     MS_method <- Randomization <- Matrix <- Batch <- Acquired_Sample_ID <- Run_number <-
