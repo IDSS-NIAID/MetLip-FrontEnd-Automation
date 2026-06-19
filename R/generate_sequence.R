@@ -49,12 +49,10 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
   # Iterate over unique MS methods in plate_loading
   for (method in unique(plate_loading$MS_method)) {
     
-    # Filter and randomize the sample order for the current method
+    # Filter to the current method (randomization now happens at batch scope)
     select_method <- plate_loading %>%
       filter(MS_method == method) %>%
       mutate(Injection_vol = injection_vol) %>%
-      mutate(Randomization = runif(n())) %>%
-      arrange(Randomization) %>%
       ungroup()
     
     ms_method <- unique(select_method$MS_method)
@@ -78,6 +76,29 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
         
         # Skip empty combinations
         if (nrow(batch_samples) == 0) next
+        
+        # === RANDOMIZE INJECTION ORDER (within this method × matrix × batch) ===
+        valid_groups <- intersect(group_by_cols, colnames(batch_samples))
+        
+        if (length(valid_groups) > 0) {
+          # Shuffle the order of groups, AND shuffle samples within each group
+          group_keys <- batch_samples %>%
+            dplyr::distinct(dplyr::across(dplyr::all_of(valid_groups)))
+          group_keys <- group_keys[sample(nrow(group_keys)), , drop = FALSE]
+          group_keys$.group_order <- seq_len(nrow(group_keys))
+          
+          batch_samples <- batch_samples %>%
+            dplyr::left_join(group_keys, by = valid_groups) %>%
+            mutate(.within = runif(n())) %>%
+            arrange(.group_order, .within) %>%
+            select(-.group_order, -.within)
+        } else {
+          # No grouping columns — simple shuffle of all samples in the batch
+          batch_samples <- batch_samples %>%
+            mutate(.rand = runif(n())) %>%
+            arrange(.rand) %>%
+            select(-.rand)
+        }
         
         # Filter QC and BLANK samples for the current batch.
         # Use the user-supplied override if given, otherwise default to the
