@@ -8,6 +8,10 @@
 #' @param project_id Unique project identifier.
 #' @param injection_vol Numeric value specifying the injection volume.
 #' @param lc_methods Named character vector mapping each MS method to its LC method (e.g. c(TCMU = "HILIC_pos")). Optional.
+#' @param qc_plate_override Optional. Override the QC plate number.
+#' @param qc_position_override Optional. Override the QC vial position.
+#' @param blank_plate_override Optional. Override the blank plate number.
+#' @param blank_position_override Optional. Override the blank vial position.
 #' @param output_dir Directory to write CSV files to. Defaults to getwd(); on Posit Connect use tempdir().
 #' @return (Invisibly) a character vector of file paths written.
 #' @export
@@ -19,6 +23,10 @@
 generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
                               project_id, injection_vol,
                               lc_methods = character(),
+                              qc_plate_override       = NULL,
+                              qc_position_override    = NULL,
+                              blank_plate_override    = NULL,
+                              blank_position_override = NULL,
                               output_dir = getwd()) {
   # take care of annoying no visible binding notes
   if(FALSE)
@@ -64,9 +72,8 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
         if (nrow(batch_samples) == 0) next
         
         # Filter QC and BLANK samples for the current batch.
-        # Select the position at the very END of the last plate (highest plate,
-        # highest vial). This guarantees a single QC and single blank vial,
-        # ignoring any stray earlier-plate positions.
+        # Use the user-supplied override if given, otherwise default to the
+        # position at the very end of the last plate (highest plate, highest vial).
         qc_plate_data_isl    <- qc_plate_data %>% filter(Batch == batch)
         blank_plate_data_isl <- blank_plate_data %>% filter(Batch == batch)
         
@@ -75,10 +82,10 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
         blank_sel <- blank_plate_data_isl %>%
           arrange(desc(Plate), desc(Position)) %>% dplyr::slice(1)
         
-        qc_plate       <- qc_sel$Plate
-        qc_position    <- qc_sel$Position
-        blank_plate    <- blank_sel$Plate
-        blank_position <- blank_sel$Position
+        qc_plate       <- if (!is.null(qc_plate_override))       qc_plate_override       else qc_sel$Plate
+        qc_position    <- if (!is.null(qc_position_override))    qc_position_override    else qc_sel$Position
+        blank_plate    <- if (!is.null(blank_plate_override))    blank_plate_override    else blank_sel$Plate
+        blank_position <- if (!is.null(blank_position_override)) blank_position_override else blank_sel$Position
         
         # Separate counters so QC and Blank each number sequentially
         qc_counter    <- 0
