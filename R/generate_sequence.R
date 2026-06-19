@@ -8,6 +8,7 @@
 #' @param project_id Unique project identifier.
 #' @param injection_vol Numeric value specifying the injection volume.
 #' @param lc_methods Named character vector mapping each MS method to its LC method (e.g. c(TCMU = "HILIC_pos")). Optional.
+#' @param qc_blank_interval Integer. Insert a QC + blank after every N samples. Default 10.
 #' @param qc_plate_override Optional. Override the QC plate number.
 #' @param qc_position_override Optional. Override the QC vial position.
 #' @param blank_plate_override Optional. Override the blank plate number.
@@ -23,6 +24,7 @@
 generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
                               project_id, injection_vol,
                               lc_methods = character(),
+                              qc_blank_interval = 10,
                               qc_plate_override       = NULL,
                               qc_position_override    = NULL,
                               blank_plate_override    = NULL,
@@ -138,11 +140,14 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
         # Combine initial blanks + QC + blank with the matrix/batch sample data
         full_sequence <- bind_rows(initial_blanks, initial_qc, initial_blank, batch_samples)
         
-        # === INSERT QC AND BLANK AT INTERVALS OF 10 ===
+        # === INSERT QC AND BLANK AT THE CHOSEN INTERVAL ===
         # Positions are computed on the original length; `offset` accounts for the
         # 2 rows added each iteration so later inserts stay aligned.
-        if (nrow(full_sequence) >= 16) {
-          insert_positions <- seq(6 + 10, nrow(full_sequence), by = 10)
+        # Setup rows = 6 (4 blanks + 1 QC + 1 blank); first insert after the
+        # first full interval of samples.
+        first_insert <- 6 + qc_blank_interval
+        if (nrow(full_sequence) > first_insert) {
+          insert_positions <- seq(first_insert, nrow(full_sequence), by = qc_blank_interval)
         } else {
           insert_positions <- integer(0)
         }
