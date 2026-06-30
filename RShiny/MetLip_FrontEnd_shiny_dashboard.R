@@ -169,6 +169,7 @@ ui <- dashboardPage(
         shinyjs::hidden(div(id = "ms_builder_section",
           fluidRow(box(
             title = "Generate Acquired Sample Names", width = 12,
+            p("Enter one MS Method at a time."),
             fluidRow(
               column(4, textInput("ms_input", "Enter MS Method:",
                                   placeholder = "type here")),
@@ -316,7 +317,7 @@ ui <- dashboardPage(
             uiOutput("lc_inputs_ui"),
             br(),
             h4("QC & Blank Positions"),
-            p("Positions for the QC and blank vials. Defaults shown — adjust if needed."),
+            p("Positions for the QC and blank vials."),
             fluidRow(
               column(3, numericInput("qc_plate", "QC Plate:",
                                      value = 3, min = 1, step = 1)),
@@ -329,7 +330,7 @@ ui <- dashboardPage(
             ),
             fluidRow(
               column(4, numericInput("qc_blank_interval",
-                                     "Insert QC + Blank every N samples:",
+                                     "Insert QC and Blank every N samples:",
                                      value = 10, min = 1, step = 1))
             ),
             br(),
@@ -347,7 +348,7 @@ ui <- dashboardPage(
         shinyjs::hidden(div(id = "download_section",
           fluidRow(box(
             title = "Download", width = 12,
-            p("Downloads a ZIP containing plate loading data (CSV + Excel)",
+            p("Downloads a ZIP containing plate loading data (CSV and Excel)",
               "and sequence files (CSV)."),
             downloadButton("download_all_zip", "Download",
                            icon = icon("download"), class = "btn-primary")
