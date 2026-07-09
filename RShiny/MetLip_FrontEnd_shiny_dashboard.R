@@ -21,8 +21,7 @@ library(MetLipAutomation)
 tas_api_key <- Sys.getenv("TAS_PCS_API_KEY")
 tas_upn     <- Sys.getenv("TAS_PCS_UPN")
 
-#tas_base_url      <- "https://rtb.nih.gov"
-tas_base_url      <- "https://tas-support.niaid.nih.gov"
+tas_base_url      <- "https://rtb.nih.gov"
 tas_gen_token_url <- paste0(tas_base_url, "/api/GenerateApiToken")
 tas_download_url  <- paste0(tas_base_url, "/api/Pcs/DownloadSubmittedSamples")
 tas_upload_url    <- paste0(tas_base_url, "/api/Pcs/UploadAcquiredSamples")
@@ -37,8 +36,7 @@ build_tas_identity_jwt <- function() {
   now <- as.integer(Sys.time())
   claim <- jose::jwt_claim(
     sub = tas_upn,
-    # aud = "NiaidTasProduction",
-    aud = "NiaidTasSupport",
+    aud = "NiaidTasProduction",
     exp = now + 180L,
     nbf = now - 3L
   )
