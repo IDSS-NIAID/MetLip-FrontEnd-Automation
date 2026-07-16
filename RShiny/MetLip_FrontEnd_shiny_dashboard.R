@@ -21,8 +21,7 @@ library(MetLipAutomation)
 tas_api_key <- Sys.getenv("TAS_PCS_API_KEY")
 tas_upn     <- Sys.getenv("TAS_PCS_UPN")
 
-#tas_base_url      <- "https://rtb.nih.gov"
-tas_base_url      <- "https://tas-support.niaid.nih.gov"
+tas_base_url      <- "https://rtb.nih.gov"
 tas_gen_token_url <- paste0(tas_base_url, "/api/GenerateApiToken")
 tas_download_url  <- paste0(tas_base_url, "/api/Pcs/DownloadSubmittedSamples")
 tas_upload_url    <- paste0(tas_base_url, "/api/Pcs/UploadAcquiredSamples")
@@ -37,8 +36,7 @@ build_tas_identity_jwt <- function() {
   now <- as.integer(Sys.time())
   claim <- jose::jwt_claim(
     sub = tas_upn,
-    # aud = "NiaidTasProduction",
-    aud = "NiaidTasSupport",
+    aud = "NiaidTasProduction",
     exp = now + 180L,
     nbf = now - 3L
   )
@@ -57,13 +55,13 @@ get_tas_token <- function() {
     httr::add_headers(Authorization = paste("Bearer", identity_jwt))
   )
   if (res$status_code != 200)
-    stop(paste("GenerateApiToken failed — HTTP", res$status_code))
+    stop(paste("GenerateApiToken failed HTTP", res$status_code))
   token_cache$api_token  <- trimws(httr::content(res, "text", encoding = "UTF-8"))
   token_cache$expires_at <- now + 180L
   token_cache$api_token
 }
 
-# DownloadSubmittedSamples — body must be a raw JSON string (encode="json" fails)
+# DownloadSubmittedSamples, body must be a raw JSON string (encode="json" fails)
 tas_download <- function(request_id) {
   api_token <- get_tas_token()
   raw_body  <- paste0('{"RequestId":"', request_id, '"}')
@@ -77,7 +75,7 @@ tas_download <- function(request_id) {
   )
 }
 
-# UploadAcquiredSamples — payload is a raw JSON string
+# UploadAcquiredSamples, payload is a raw JSON string
 tas_upload <- function(upload_payload) {
   api_token <- get_tas_token()
   httr::POST(
@@ -224,7 +222,7 @@ ui <- dashboardPage(
                                               accept = c(".xlsx", ".xls")),
                                     tags$p(tags$strong("Note:"),
                                            " keep the ", tags$code("Notes"),
-                                           " column in your parsed file — it is required for plate generation.",
+                                           " column in your parsed file. The column is required for plate generation.",
                                            style = "color: #dd4b39; font-size: 13px; margin-top: -8px;")
                 )),
                 uiOutput("plate_project_id_ui"),
@@ -297,9 +295,8 @@ ui <- dashboardPage(
                                     DTOutput("validated_table"),
                                     br(),
                                     h4("Randomization Grouping"),
-                                    p("Select column(s) to randomize within. The order of groups is",
-                                      "shuffled, and samples are shuffled within each group.",
-                                      "Leave all unchecked for a simple shuffle of all samples."),
+                                    p("Select column(s) to randomize within.",
+                                      "Leave all unchecked for default randomization of all samples per plate."),
                                     uiOutput("group_cols_ui"),
                                     br(),
                                     actionButton("generate_plate_btn", "Generate Plate Meta Data",
