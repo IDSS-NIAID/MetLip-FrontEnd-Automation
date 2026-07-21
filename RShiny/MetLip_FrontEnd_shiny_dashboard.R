@@ -9,6 +9,7 @@ library(dplyr)
 library(writexl)
 library(readxl)
 library(zip)
+library(sortable)   # draggable tile ordering for randomization levels
 
 if (FALSE)
   devtools::install_github("IDSS-NIAID/MetLip-FrontEnd-Automation")
@@ -145,6 +146,18 @@ ui <- dashboardPage(
                                   margin-top: 8px; margin-bottom: 8px; }
       .selection-idle           { color: #6c757d; font-weight: bold; font-size: 15px;
                                   margin-top: 8px; margin-bottom: 8px; }
+      /* Draggable level tiles (rank_list) */
+      .rank-list-container { background: #f4fafb; border: 1px solid #cfe6ea;
+                             border-radius: 6px; padding: 8px; min-height: 40px; }
+      .rank-list-item      { background: #157b8d; color: #fff; border-radius: 12px;
+                             padding: 6px 12px; margin: 4px; font-size: 13px;
+                             font-weight: bold; cursor: grab; display: inline-block; }
+      .rank-list-item:active { cursor: grabbing; }
+      .rank-var-label      { font-weight: bold; color: #0f5e6d; margin-top: 10px; }
+      .order-saved-msg     { color: #00a65a; font-weight: bold; font-size: 13px;
+                             margin-top: 6px; }
+      .order-unsaved-msg   { color: #dd4b39; font-weight: bold; font-size: 13px;
+                             margin-top: 6px; }
     ")),
     
     tabItems(
@@ -298,6 +311,19 @@ ui <- dashboardPage(
                                     p("Select column(s) to randomize within.",
                                       "Leave all unchecked for default randomization of all samples per plate."),
                                     uiOutput("group_cols_ui"),
+                                    
+                                    # Level ordering (draggable tiles)
+                                    br(),
+                                    h4("Group Level Order (optional)"),
+                                    p("For each checked variable below, drag the level tiles into the",
+                                      "order you want groups to run. Groups run in that fixed order and",
+                                      "samples are randomized within each group.",
+                                      strong("Save Order"), " to apply. Any variable you don't save keeps",
+                                      "random group order."),
+                                    uiOutput("level_order_ui"),
+                                    uiOutput("level_order_status"),
+                                    
+                                    
                                     br(),
                                     actionButton("generate_plate_btn", "Generate Plate Meta Data",
                                                  icon = icon("th"), class = "btn-warning")
@@ -377,7 +403,8 @@ server <- function(input, output, session) {
     plate_results    = NULL,
     ms_methods_detected = character(),
     seq_dir          = NULL,
-    seq_paths        = NULL
+    seq_paths        = NULL,
+    level_orders     = list()
   )
   
   matrix_assignments <- reactiveVal(
@@ -663,6 +690,7 @@ server <- function(input, output, session) {
     rv$plate_results <- NULL
     rv$seq_dir       <- NULL
     rv$seq_paths     <- NULL
+    rv$level_orders  <- list()
     selection_mode("idle")
     matrix_assignments(data.frame(Matrix = character(0), FirstID = character(0),
                                   LastID = character(0), stringsAsFactors = FALSE))
@@ -841,6 +869,7 @@ server <- function(input, output, session) {
     )
     
     rv$df_validated <- df
+    rv$level_orders <- list()   # reset any prior saved orders on re-validate
     
     preview_cols <- intersect(
       c("Project_ID", sub_id_col, "Submitted Sample Names",
@@ -871,6 +900,98 @@ server <- function(input, output, session) {
                        choices = cols, inline = TRUE)
   })
   
+  # Level ordering
+  # Render one rank_list of draggable level tiles per checked grouping variable,
+  # plus a single shared Save Order button. Levels are read from the validated
+  # data. If a variable already has a saved order, seed the tiles with it.
+  output$level_order_ui <- renderUI({
+    checked <- input$group_by_cols
+    if (is.null(checked) || length(checked) == 0)
+      return(tags$em("Check one or more variables above to order their levels."))
+    req(rv$df_validated)
+    
+    tiles <- lapply(checked, function(gc) {
+      if (!gc %in% colnames(rv$df_validated)) return(NULL)
+      present_levels <- unique(as.character(rv$df_validated[[gc]]))
+      present_levels <- present_levels[!is.na(present_levels)]
+      if (length(present_levels) == 0) return(NULL)
+      
+      # Seed order: saved order (filtered to present) then any new levels,
+      # otherwise the natural data order.
+      saved <- rv$level_orders[[gc]]
+      if (!is.null(saved) && length(saved) > 0) {
+        seed <- c(saved[saved %in% present_levels],
+                  setdiff(present_levels, saved))
+      } else {
+        seed <- present_levels
+      }
+      
+      tagList(
+        div(class = "rank-var-label", gc),
+        sortable::rank_list(
+          text      = NULL,
+          labels    = seed,
+          input_id  = paste0("levord_", gc),
+          class     = "rank-list-container"
+        )
+      )
+    })
+    tiles <- tiles[!vapply(tiles, is.null, logical(1))]
+    if (length(tiles) == 0)
+      return(tags$em("No orderable levels found for the checked variable(s)."))
+    
+    tagList(
+      tiles,
+      br(),
+      actionButton("save_level_order_btn", "Save Order",
+                   icon = icon("save"), class = "btn-info")
+    )
+  })
+  
+  # Save button: read every checked variable's current tile order into
+  # rv$level_orders. Only checked variables are saved; unchecked are dropped.
+  observeEvent(input$save_level_order_btn, {
+    checked <- input$group_by_cols
+    if (is.null(checked) || length(checked) == 0) {
+      showNotification("Check at least one variable before saving an order.",
+                       type = "warning"); return()
+    }
+    new_orders <- list()
+    for (gc in checked) {
+      ord <- input[[paste0("levord_", gc)]]
+      if (!is.null(ord) && length(ord) > 0)
+        new_orders[[gc]] <- as.character(ord)
+    }
+    rv$level_orders <- new_orders
+    showNotification(
+      paste0("Saved level order for: ", paste(names(new_orders), collapse = ", ")),
+      type = "message", duration = 4)
+  })
+  
+  # If the checkbox selection changes, any previously saved order may no longer
+  # match. Clear saved orders so the user re-saves against the current selection.
+  observeEvent(input$group_by_cols, {
+    if (length(rv$level_orders) > 0) {
+      rv$level_orders <- list()
+      showNotification(
+        "Grouping selection changed. Re-drag and Save Order if you want a fixed order.",
+        type = "warning", duration = 5)
+    }
+  }, ignoreNULL = FALSE, ignoreInit = TRUE)
+  
+  output$level_order_status <- renderUI({
+    if (length(rv$level_orders) == 0)
+      return(tags$p("No level order saved. Unsaved variables use random group order.",
+                    class = "order-unsaved-msg"))
+    lines <- vapply(names(rv$level_orders), function(gc)
+      paste0(gc, ": ", paste(rv$level_orders[[gc]], collapse = " \u2192 ")),
+      character(1))
+    tags$div(class = "order-saved-msg",
+             tags$span("Saved order:"),
+             lapply(lines, function(l) tags$div(l)))
+  })
+  
+  
   observeEvent(input$generate_plate_btn, {
     req(rv$df_validated)
     
@@ -890,18 +1011,66 @@ server <- function(input, output, session) {
     )
     if (is.null(processed)) return()
     
-    # Join parsed columns onto plate_loading by Submitted Sample ID, so they
-    # appear in the plate meta data files and are available for randomization
-    # grouping inside generate_sequence(). Metadata repeats across MS methods
-    # by design, so joining on Submitted Sample ID alone is sufficient.
+    
+    # Join parsed columns onto plate_loading so they are available for
+    # randomization grouping inside generate_sequence().
     if (length(rv$parsed_cols) > 0) {
       sub_col <- rv$plate_id_col
+      
+      # One row per submitted sample id. If covariates vary within an id the
+      # grouping is ambiguous, so warn rather than silently fan out.
       parsed_lookup <- rv$df_source %>%
         select(all_of(c(sub_col, rv$parsed_cols))) %>%
         distinct()
-      join_by_vec <- setNames(sub_col, "Submitted_Sample_ID")
-      processed$plate_loading <- processed$plate_loading %>%
-        left_join(parsed_lookup, by = join_by_vec)
+      
+      dup_ids <- parsed_lookup %>%
+        count(.data[[sub_col]]) %>%
+        filter(n > 1)
+      if (nrow(dup_ids) > 0)
+        showNotification(
+          paste("Warning: covariates are not unique per sample for",
+                nrow(dup_ids), "ID(s). Grouping may be unreliable."),
+          type = "warning", duration = 10)
+      
+      # Resolve the join key from plate_loading's ACTUAL column names, trying the
+      # common spellings that process_plate_data() might use.
+      candidate_keys <- c("Submitted_Sample_ID", "Submitted Sample Ids",
+                          "SubmittedSampleIds", "Submitted_Sample_Ids",
+                          "Submitted Sample ID", sub_col)
+      target_key <- candidate_keys[candidate_keys %in% colnames(processed$plate_loading)][1]
+      
+      if (is.na(target_key)) {
+        showNotification(
+          paste0("Could not find a Submitted Sample ID column in plate_loading ",
+                 "to join grouping covariates on. Available columns: ",
+                 paste(colnames(processed$plate_loading), collapse = ", ")),
+          type = "error", duration = 15)
+      } else {
+        join_by_vec <- setNames(sub_col, target_key)
+        before <- nrow(processed$plate_loading)
+        processed$plate_loading <- processed$plate_loading %>%
+          left_join(parsed_lookup, by = join_by_vec)
+        
+        # If the row count grew, covariates fanned out (non-unique per id).
+        if (nrow(processed$plate_loading) != before)
+          showNotification(
+            paste0("Row count changed after join (", before, " -> ",
+                   nrow(processed$plate_loading),
+                   "). Grouping covariates are fanning out; results may be unreliable."),
+            type = "warning", duration = 10)
+        
+        # Confirm the covariate columns actually populated. All-NA behaves like
+        # no grouping, can potentially fail silently.
+        na_all <- vapply(rv$parsed_cols, function(cc)
+          all(is.na(processed$plate_loading[[cc]])), logical(1))
+        if (any(na_all))
+          showNotification(
+            paste("These covariates are all NA after the join and will NOT group:",
+                  paste(rv$parsed_cols[na_all], collapse = ", "),
+                  " check that the Submitted Sample IDs match between the Acquired Sample ID",
+                  "file and plate_loading output."),
+            type = "error", duration = 15)
+      }
     }
     
     rv$plate_results <- processed
@@ -960,6 +1129,12 @@ server <- function(input, output, session) {
                        type = "warning", duration = 6)
     }
     
+    # Only pass saved level orders for variables that are still checked.
+    checked      <- input$group_by_cols
+    level_orders <- rv$level_orders
+    if (length(level_orders) > 0 && !is.null(checked))
+      level_orders <- level_orders[names(level_orders) %in% checked]
+    
     td <- tempfile("seq_")
     dir.create(td, recursive = TRUE)
     
@@ -973,6 +1148,7 @@ server <- function(input, output, session) {
         lc_methods    = lc_map,
         qc_blank_interval       = input$qc_blank_interval,
         group_by_cols           = input$group_by_cols,
+        level_orders            = level_orders,
         qc_plate_override       = input$qc_plate,
         qc_position_override    = input$qc_vial,
         blank_plate_override    = input$blank_plate,
