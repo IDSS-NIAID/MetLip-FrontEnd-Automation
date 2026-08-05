@@ -1120,7 +1120,7 @@ server <- function(input, output, session) {
         column(5,
                textInput(paste0("sciex_name_", i),
                          label = paste0("MS Method for ", ms[i], ":"),
-                         placeholder = "full SciexOS method name"))
+                         placeholder = "type here"))
       )
     })
   })
