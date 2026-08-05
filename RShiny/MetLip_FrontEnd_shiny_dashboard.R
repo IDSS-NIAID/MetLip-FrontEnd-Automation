@@ -342,8 +342,9 @@ ui <- dashboardPage(
                                     selectInput("plate_matrix_select", "View Matrix:", choices = NULL),
                                     DTOutput("plate_table"),
                                     br(),
-                                    h4("LC Methods"),
-                                    p("Enter the LC Method for each MS Method present in this project."),
+                                    h4("LC and MS methods formated for SciexOS"),
+                                    p("Enter the specific LC Method",
+                                      "and the MS Method names."),
                                     uiOutput("lc_inputs_ui"),
                                     br(),
                                     h4("QC & Blank Positions"),
@@ -1151,6 +1152,15 @@ server <- function(input, output, session) {
                        type = "warning", duration = 6)
     }
     
+    # Full SciexOS method names, keyed to the same shorthand MS methods.
+    # Empty entries fall back to the shorthand inside generate_sequence().
+    sciex_vals <- sapply(seq_along(ms), function(i) {
+      val <- input[[paste0("sciex_name_", i)]]
+      if (is.null(val)) "" else trimws(val)
+    })
+    sciex_map <- setNames(sciex_vals, ms)
+    
+    
     # Only pass saved level orders for variables that are still checked.
     checked      <- input$group_by_cols
     level_orders <- rv$level_orders
@@ -1168,6 +1178,7 @@ server <- function(input, output, session) {
         rv$plate_results$project_id,
         injection_vol = input$injection_vol,
         lc_methods    = lc_map,
+        sciex_names   = sciex_map,
         qc_blank_interval       = input$qc_blank_interval,
         group_by_cols           = input$group_by_cols,
         level_orders            = level_orders,
