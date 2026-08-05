@@ -297,4 +297,4 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
   }     # end for method
   
   invisible(written_paths)
-  
+}  
