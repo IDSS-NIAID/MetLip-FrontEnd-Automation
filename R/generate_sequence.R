@@ -11,6 +11,7 @@
 #' @param qc_blank_interval Integer. Insert a QC + blank after every N samples. Default 10.
 #' @param group_by_cols Character vector of column names to randomize within. Empty = simple shuffle of all samples in the batch. When supplied, the order of groups is shuffled AND samples within each group are shuffled.
 #' @param level_orders Optional named list mapping a grouping column name to an ordered character vector of its levels, e.g. list(Timepoint = c("Pre","Day1","Day7")). For any grouping column present in this list, groups run in the specified level order (deterministic) instead of being shuffled; samples are still shuffled WITHIN each group. Ordering is applied per-variable and nested in the order the columns appear in group_by_cols. Columns not listed here keep the default shuffled-group behavior. Levels not listed for a given column are appended after the specified ones, in their existing order.
+#' @param randomize Logical. Determines whether or not sample injection order should be randomized.
 #' @param qc_plate_override Optional. Override the QC plate number.
 #' @param qc_position_override Optional. Override the QC vial position.
 #' @param blank_plate_override Optional. Override the blank plate number.
@@ -30,6 +31,7 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
                               qc_blank_interval = 10,
                               group_by_cols = character(),
                               level_orders = list(),
+                              randomize = TRUE,
                               qc_plate_override       = NULL,
                               qc_position_override    = NULL,
                               blank_plate_override    = NULL,
@@ -104,10 +106,18 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
         set.seed(base_seed +
                    .str_hash(paste(ms_method, mtx, batch, sep = "|")))
         
-        # Randomize injection order (within this method × matrix × batch)
-        valid_groups <- intersect(group_by_cols, colnames(batch_samples))
+        # Randomize injection order (within this method × matrix × batch).
+        # When randomize = FALSE, samples keep their existing order in
+        # plate_loading and grouping / level orders are ignored.
+        valid_groups <- if (randomize) {
+          intersect(group_by_cols, colnames(batch_samples))
+        } else {
+          character(0)
+        }
         
-        if (length(valid_groups) > 0) {
+        if (!randomize) {
+          # No reordering: leave batch_samples exactly as received.
+        } else if (length(valid_groups) > 0) {
           
           # Build a per-group ordering key for each grouping column.
           #
