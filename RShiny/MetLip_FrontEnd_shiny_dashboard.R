@@ -1109,11 +1109,18 @@ server <- function(input, output, session) {
     ms <- rv$ms_methods_detected
     if (length(ms) == 0) return(tags$em("No MS methods detected."))
     lapply(seq_along(ms), function(i) {
-      fluidRow(column(6,
-                      textInput(paste0("lc_method_", i),
-                                label = paste0("LC Method for ", ms[i], ":"),
-                                placeholder = "type here")
-      ))
+      fluidRow(
+        column(2, tags$p(tags$strong(ms[i]),
+                         style = "margin-top: 32px; color: #0f5e6d;")),
+        column(5,
+               textInput(paste0("lc_method_", i),
+                         label = paste0("LC Method for ", ms[i], ":"),
+                         placeholder = "type here")),
+        column(5,
+               textInput(paste0("sciex_name_", i),
+                         label = paste0("MS Method for ", ms[i], ":"),
+                         placeholder = "full SciexOS method name"))
+      )
     })
   })
   
