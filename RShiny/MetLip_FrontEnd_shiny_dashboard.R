@@ -9,7 +9,7 @@ library(dplyr)
 library(writexl)
 library(readxl)
 library(zip)
-library(sortable)   # draggable tile ordering for randomization levels
+library(sortable)
 
 if (FALSE)
   devtools::install_github("IDSS-NIAID/MetLip-FrontEnd-Automation")
@@ -233,6 +233,11 @@ ui <- dashboardPage(
                 shinyjs::hidden(div(id = "upload_panel",
                                     fileInput("plate_file_input", "Upload Acquired Samples Excel:",
                                               accept = c(".xlsx", ".xls")),
+                                    tags$p(tags$strong("Note:"),
+                                           " if the Acquired Sample ID column header contains ",
+                                           tags$code("(blank if new)"),
+                                           ", it will be removed automatically during upload.",
+                                           style = "color: #dd4b39; font-size: 13px; margin-top: -8px;"),
                                     tags$p(tags$strong("Note:"),
                                            " keep the ", tags$code("Notes"),
                                            " column in your parsed file. The column is required for plate generation.",
@@ -672,6 +677,16 @@ server <- function(input, output, session) {
                        showNotification("Could not read uploaded file.", type = "error"); NULL
                      })
       if (is.null(df)) return()
+      
+      # Strip a "(blank if new)" suffix from any column header 
+      cleaned <- gsub("\\s*\\(blank if new\\)\\s*$", "",
+                      colnames(df), ignore.case = TRUE)
+      if (!identical(cleaned, colnames(df))) {
+        colnames(df) <- cleaned
+        showNotification("Removed '(blank if new)' from column header(s).",
+                         type = "message", duration = 4)
+      }
+      
       rv$df_source <- df
       output$source_status <- renderUI(
         tags$p(paste0("Loaded ", nrow(df), " rows from uploaded file."),
