@@ -1015,6 +1015,8 @@ server <- function(input, output, session) {
   }, ignoreNULL = FALSE, ignoreInit = TRUE)
   
   output$level_order_status <- renderUI({
+    if (length(rv$level_orders) == 0)
+      return(NULL)
     lines <- vapply(names(rv$level_orders), function(gc)
       paste0(gc, ": ", paste(rv$level_orders[[gc]], collapse = ", ")),
       character(1))
