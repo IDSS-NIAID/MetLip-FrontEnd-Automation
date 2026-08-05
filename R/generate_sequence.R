@@ -35,13 +35,22 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
                               blank_position_override = NULL,
                               output_dir = getwd()) {
   
-  # Fet seed in the settings to reproducibily generate the same sequence
-  set.seed(3.141592653)
+
+  # seed will be set per batch from inside the loop, so every
+  # batch is independent and reproducible regardless of iteration order.
+  base_seed <- 3141592L
+  
+  # small deterministic integer hash of a string, for per-batch seeding
+  .str_hash <- function(s) {
+    s <- as.character(s)
+    if (length(s) == 0 || is.na(s)) s <- ""
+    sum(utf8ToInt(s) * seq_along(utf8ToInt(s))) %% .Machine$integer.max
+  }
   
   # take care of annoying no visible binding notes
   if(FALSE)
     MS_method <- Randomization <- Matrix <- Batch <- Acquired_Sample_ID <- Run_number <-
-      Folder_name <- Run_name <- Plate <- Injection_vol <- Data_file <- Position <- NULL
+    Folder_name <- Run_name <- Plate <- Injection_vol <- Data_file <- Position <- NULL
   
   # ensure output dir exists & init collector
   if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
@@ -79,27 +88,46 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
         # Skip empty combinations
         if (nrow(batch_samples) == 0) next
         
+        # Independent, reproducible randomization for each method x matrix x batch,
+        set.seed(base_seed +
+                   .str_hash(paste(ms_method, mtx, batch, sep = "|")))
+        
         # Randomize injection order (within this method × matrix × batch)
         valid_groups <- intersect(group_by_cols, colnames(batch_samples))
         
         if (length(valid_groups) > 0) {
+          
           # Build a per-group ordering key for each grouping column.
           #
           # For a column that has a user-specified level order (via level_orders),
-          # groups run in that fixed order. Levels not listed are
-          # appended after the specified ones. For a column with no specified
-          # order, group order is randomized. In both cases,
-          # samples are randomized WITHIN each final group combination.
-          #
+          # groups run in that fixed order. Levels not listed are appended after
+          # the specified ones. For a column with no specified order, group order
+          # is randomized. In both cases, samples are randomized WITHIN each final
+          # group combination.
           order_key_cols <- character(0)
           
           for (gc in valid_groups) {
             key_col <- paste0(".order_", gc)
             
-            if (!is.null(level_orders[[gc]]) && length(level_orders[[gc]]) > 0) {
+            has_user_order <- !is.null(level_orders[[gc]]) &&
+              length(level_orders[[gc]]) > 0
+            
+            if (has_user_order) {
               # User-specified fixed order for this column's levels.
               present_levels  <- unique(as.character(batch_samples[[gc]]))
+              present_levels  <- present_levels[!is.na(present_levels)]
               user_levels     <- as.character(level_orders[[gc]])
+              
+              # Warn if NONE of the saved levels appear in this batch 
+              if (!any(user_levels %in% present_levels)) {
+                warning(sprintf(
+                  paste0("level_orders for column '%s' matches no values in ",
+                         "batch '%s' (method '%s', matrix '%s'). Falling back to ",
+                         "random group order for this batch. Check that the ",
+                         "covariate is populated for every batch."),
+                  gc, batch, ms_method, mtx))
+              }
+              
               # Keep only user levels that actually appear, then append any
               # present-but-unlisted levels so nothing is dropped.
               ordered_levels  <- c(
@@ -110,7 +138,7 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
                 match(as.character(batch_samples[[gc]]), ordered_levels)
             } else {
               # No specified order: assign a random rank per distinct level so
-              # this column's groups are shuffled (original behavior).
+              # this column's groups are randomized across batch.
               lv         <- unique(as.character(batch_samples[[gc]]))
               rand_rank  <- setNames(sample(seq_along(lv)), lv)
               batch_samples[[key_col]] <-
@@ -119,9 +147,8 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
             order_key_cols <- c(order_key_cols, key_col)
           }
           
-          # Shuffle samples within each final group combination, then arrange by
-          # the nested ordering keys (fixed and/or random) followed by the
-          # within-group random draw.
+          # Randomize samples within each final group combination, then arrange by
+          # the nested ordering keys (fixed and/or random)
           batch_samples <- batch_samples %>%
             mutate(.within = runif(n())) %>%
             arrange(across(all_of(order_key_cols)), .within) %>%
@@ -154,71 +181,10 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
         qc_counter    <- 0
         blank_counter <- 0
         
-        # Add 4 BLANK Runs at the beginning
-        initial_blanks <- list()
-        for (i in 1:4) {
-          blank_counter <- blank_counter + 1
-          initial_blanks[[i]] <- tibble(
-            Project_ID = project_id,
-            MS_method = ms_method,
-            Submitted_Sample_ID = sprintf("Blank-%02d", blank_counter),
-            Acquired_Sample_ID = sprintf("Blank-%02d-%s", blank_counter, mtx),
-            Matrix = mtx,
-            Batch = batch,
-            Plate = blank_plate,
-            Position = blank_position,
-            Injection_vol = injection_vol
-          )
-        }
-        
-        # Add initial QC and blank (after the initial 4 blanks)
-        qc_counter <- qc_counter + 1
-        initial_qc <- tibble(
-          Project_ID = project_id,
-          MS_method = ms_method,
-          Submitted_Sample_ID = sprintf("QC-%02d", qc_counter),
-          Acquired_Sample_ID = sprintf("QC-%02d-%s", qc_counter, mtx),
-          Matrix = mtx,
-          Batch = batch,
-          Plate = qc_plate,
-          Position = qc_position,
-          Injection_vol = injection_vol
-        )
-        
-        blank_counter <- blank_counter + 1
-        initial_blank <- tibble(
-          Project_ID = project_id,
-          MS_method = ms_method,
-          Submitted_Sample_ID = sprintf("Blank-%02d", blank_counter),
-          Acquired_Sample_ID = sprintf("Blank-%02d-%s", blank_counter, mtx),
-          Matrix = mtx,
-          Batch = batch,
-          Plate = blank_plate,
-          Position = blank_position,
-          Injection_vol = injection_vol
-        )
-        
-        # Combine initial blanks + QC + blank with the matrix/batch sample data
-        full_sequence <- bind_rows(initial_blanks, initial_qc, initial_blank, batch_samples)
-        
-        # INSERT QC AND BLANK AT THE CHOSEN INTERVAL
-        # Positions are computed on the original length; `offset` accounts for the
-        # 2 rows added each iteration so later inserts stay aligned.
-        # Setup rows = 6 (4 blanks + 1 QC + 1 blank); first insert after the
-        # first full interval of samples.
-        first_insert <- 6 + qc_blank_interval
-        if (nrow(full_sequence) > first_insert) {
-          insert_positions <- seq(first_insert, nrow(full_sequence), by = qc_blank_interval)
-        } else {
-          insert_positions <- integer(0)
-        }
-        
-        offset <- 0
-        for (insert_pos in insert_positions) {
-          adjusted_pos <- insert_pos + offset
-          
-          qc_counter <- qc_counter + 1
-          new_qc_row <- tibble(
+        # Small helpers to build QC / Blank rows without repeating the tibble spec
+        make_qc_row <- function() {
+          qc_counter <<- qc_counter + 1
+          tibble(
             Project_ID = project_id,
             MS_method = ms_method,
             Submitted_Sample_ID = sprintf("QC-%02d", qc_counter),
@@ -229,9 +195,10 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
             Position = qc_position,
             Injection_vol = injection_vol
           )
-          
-          blank_counter <- blank_counter + 1
-          new_blank_row <- tibble(
+        }
+        make_blank_row <- function() {
+          blank_counter <<- blank_counter + 1
+          tibble(
             Project_ID = project_id,
             MS_method = ms_method,
             Submitted_Sample_ID = sprintf("Blank-%02d", blank_counter),
@@ -242,53 +209,41 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
             Position = blank_position,
             Injection_vol = injection_vol
           )
+        }
+    
+        
+        # Setup rows: 4 blanks, then 1 QC + 1 blank
+        setup_rows <- list()
+        for (i in 1:4) setup_rows[[length(setup_rows) + 1]] <- make_blank_row()
+        setup_rows[[length(setup_rows) + 1]] <- make_qc_row()
+        setup_rows[[length(setup_rows) + 1]] <- make_blank_row()
+        setup_block <- bind_rows(setup_rows)
+        
+        # Insert QC+blank after every `qc_blank_interval` samples,
+        # but NOT after the final chunk.
+        n_samp <- nrow(batch_samples)
+        chunk_starts <- if (n_samp > 0) seq(1, n_samp, by = qc_blank_interval) else integer(0)
+        
+        sample_block_parts <- list()
+        for (ci in seq_along(chunk_starts)) {
+          start_i <- chunk_starts[ci]
+          end_i   <- min(start_i + qc_blank_interval - 1, n_samp)
+          sample_block_parts[[length(sample_block_parts) + 1]] <-
+            batch_samples[start_i:end_i, ]
           
-          # Aavoid reverse-range duplication when at the end
-          tail_rows <- if (adjusted_pos < nrow(full_sequence)) {
-            full_sequence[(adjusted_pos + 1):nrow(full_sequence), ]
-          } else {
-            full_sequence[0, ]
+          # Insert a QC+blank only if there are MORE samples after this chunk.
+          if (end_i < n_samp) {
+            sample_block_parts[[length(sample_block_parts) + 1]] <- make_qc_row()
+            sample_block_parts[[length(sample_block_parts) + 1]] <- make_blank_row()
           }
-          
-          # Insert QC and BLANK at the adjusted interval
-          full_sequence <- bind_rows(
-            full_sequence[1:adjusted_pos, ],
-            new_qc_row,
-            new_blank_row,
-            tail_rows
-          )
-          
-          offset <- offset + 2
-        } # end interval insert loop
+        }
+        sample_block <- bind_rows(sample_block_parts)
         
-        # Add QC and BLANK at the end of the sequence
-        qc_counter <- qc_counter + 1
-        final_qc <- tibble(
-          Project_ID = project_id,
-          MS_method = ms_method,
-          Submitted_Sample_ID = sprintf("QC-%02d", qc_counter),
-          Acquired_Sample_ID = sprintf("QC-%02d-%s", qc_counter, mtx),
-          Matrix = mtx,
-          Batch = batch,
-          Plate = qc_plate,
-          Position = qc_position,
-          Injection_vol = injection_vol
-        )
+        # Trailing QC + blank (exactly one pair at the very end)
+        final_block <- bind_rows(make_qc_row(), make_blank_row())
         
-        blank_counter <- blank_counter + 1
-        final_blank <- tibble(
-          Project_ID = project_id,
-          MS_method = ms_method,
-          Submitted_Sample_ID = sprintf("Blank-%02d", blank_counter),
-          Acquired_Sample_ID = sprintf("Blank-%02d-%s", blank_counter, mtx),
-          Matrix = mtx,
-          Batch = batch,
-          Plate = blank_plate,
-          Position = blank_position,
-          Injection_vol = injection_vol
-        )
-        
-        full_sequence <- bind_rows(full_sequence, final_qc, final_blank)
+        # Full sequence
+        full_sequence <- bind_rows(setup_block, sample_block, final_block)
         
         # Prepare output file structure
         # Column order: Sample Name, MS Method, LC Method, Rack Type, Plate Type,
@@ -331,4 +286,3 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
   
   invisible(written_paths)
   
-}
