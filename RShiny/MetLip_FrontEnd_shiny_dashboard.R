@@ -1000,7 +1000,7 @@ server <- function(input, output, session) {
       return(tags$p("No level order saved. Unsaved variables use random group order.",
                     class = "order-unsaved-msg"))
     lines <- vapply(names(rv$level_orders), function(gc)
-      paste0(gc, ": ", paste(rv$level_orders[[gc]], collapse = " \u2192 ")),
+      paste0(gc, ": ", paste(rv$level_orders[[gc]], collapse = ", ")),
       character(1))
     tags$div(class = "order-saved-msg",
              tags$span("Saved order:"),
