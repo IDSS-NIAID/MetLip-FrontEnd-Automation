@@ -313,9 +313,14 @@ ui <- dashboardPage(
                                     DTOutput("validated_table"),
                                     br(),
                                     h4("Randomization Grouping"),
-                                    p("Select column(s) to randomize within.",
-                                      "Leave all unchecked for default randomization of all samples per plate."),
-                                    uiOutput("group_cols_ui"),
+                                    checkboxInput("no_randomize",
+                                                  "No Randomization",
+                                                  value = FALSE),
+                                    div(id = "grouping_controls",
+                                        p("Select column(s) to randomize within.",
+                                          "Leave all unchecked for default randomization of all samples per plate."),
+                                        uiOutput("group_cols_ui")
+                                    ),
                                     
                                     # Level ordering (draggable tiles)
                                     br(),
@@ -907,6 +912,20 @@ server <- function(input, output, session) {
     shinyjs::hide("download_section")
   })
   
+  
+  # Hide grouping + level-order controls when No Randomization is selected
+  observeEvent(input$no_randomize, {
+    if (isTRUE(input$no_randomize)) {
+      shinyjs::hide("grouping_controls")
+      shinyjs::hide("level_order_ui")
+      shinyjs::hide("level_order_status")
+    } else {
+      shinyjs::show("grouping_controls")
+      shinyjs::show("level_order_ui")
+      shinyjs::show("level_order_status")
+    }
+  }, ignoreInit = TRUE)
+  
   # Render randomization grouping checkboxes from detected parsed columns
   output$group_cols_ui <- renderUI({
     cols <- rv$parsed_cols
@@ -1182,6 +1201,7 @@ server <- function(input, output, session) {
         qc_blank_interval       = input$qc_blank_interval,
         group_by_cols           = input$group_by_cols,
         level_orders            = level_orders,
+        randomize               = !isTRUE(input$no_randomize),
         qc_plate_override       = input$qc_plate,
         qc_position_override    = input$qc_vial,
         blank_plate_override    = input$blank_plate,
