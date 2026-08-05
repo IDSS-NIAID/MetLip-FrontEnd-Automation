@@ -26,6 +26,7 @@
 generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
                               project_id, injection_vol,
                               lc_methods = character(),
+                              sciex_names = character(),
                               qc_blank_interval = 10,
                               group_by_cols = character(),
                               level_orders = list(),
@@ -73,6 +74,17 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
       lc_methods[[ms_method]]
     } else {
       ""
+    }
+    
+    # Look up the full SciexOS name for this MS method. The shorthand ms_method
+    # still drives iteration and file names; this long name only populates the
+    # "MS Method" output column. Falls back to the shorthand when not supplied.
+    ms_method_sciex <- if (!is.null(sciex_names) &&
+                           ms_method %in% names(sciex_names) &&
+                           nzchar(sciex_names[[ms_method]])) {
+      sciex_names[[ms_method]]
+    } else {
+      ms_method
     }
     
     # Iterate over unique sample matrices
@@ -254,6 +266,7 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
             Folder_name  = paste(format(Sys.Date(), "%Y%m%d"), project_id, ms_method, sep = "_"),
             Run_name     = Acquired_Sample_ID,
             Data_file    = paste(Folder_name, "\\", Run_name, sep = ""),
+            `MS Method`   = ms_method_sciex,
             `LC Method`   = lc_method,
             `Rack Type`   = "SIL-40 Drawer",
             `Plate Type`  = "1.5mL VT54 (54 vial)",
@@ -261,7 +274,6 @@ generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
           ) %>%
           dplyr::rename(
             `Sample Name`      = Acquired_Sample_ID,
-            `MS Method`        = MS_method,
             `Plate Position`   = Plate,
             `Vial Position`    = Position,
             `Injection Volume` = Injection_vol,
