@@ -1,3 +1,10 @@
+# Build the shared dashboard frame around the tab module UIs.
+#' @param tas_ui UI for the "TAS Accelertaor" tab 
+#' @param sequence_ui UI for the "Sequence Generator" tab
+#' @return A 'shinydashboard::dashboardPage()' used for a Shiny app
+#' 
+#' @importFrom shiny HTML
+#' @export
 dashboard_shell <- function() {
   tags$style(HTML("
     .main-header .logo, .main-header .navbar { background-color: #157b8d; }
@@ -48,5 +55,4 @@ dashboard_ui <- function() {
       sequence_generator_ui("sequence_generator")
     )
   )
-)
-}
+)}
