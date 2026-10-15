@@ -22,8 +22,11 @@
 #' @importFrom dplyr arrange bind_rows filter mutate n rename select slice tibble ungroup row_number desc across all_of distinct left_join
 #' @importFrom magrittr %>%
 #' @importFrom stats runif
+#' @importFrom stats setNames
+#' @importFrom dplyr across all_of
 #' @importFrom utils write.csv
 #' @importFrom tibble tibble
+
 generate_sequence <- function(plate_loading, qc_plate_data, blank_plate_data,
                               project_id, injection_vol,
                               lc_methods = character(),
