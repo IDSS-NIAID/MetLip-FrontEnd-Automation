@@ -20,8 +20,8 @@ Imports:
   writexl,
   tibble
 URL: https://github.com/IDSS-NIAID/MetLip-FrontEnd-Automation
-RoxygenNote: 7.3.3
 Encoding: UTF-8
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.0

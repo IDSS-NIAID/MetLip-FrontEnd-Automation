@@ -1,6 +1,19 @@
+
+
 # Build the shared dashboard frame around the tab module UIs.
+
+#' @param tas_ui UI for the "TAS Accelertaor" tab 
+
+#' @param sequence_ui UI for the "Sequence Generator" tab
+
+
+#' @return A 'shinydashboard::dashboardPage()' used for a Shiny app
+#' 
+#' @importFrom shiny HTML
+#' @export
+
 dashboard_shell <- function(tas_ui, sequence_ui) {
-  shinydashboard::dashboardPage(
+  shinydashboard::dashboardPae(
     shinydashboard::dashboardHeader(
       title = shiny::tags$span(
         shiny::tags$img(
@@ -51,7 +64,7 @@ dashboard_shell <- function(tas_ui, sequence_ui) {
           font-size: 14px; padding: 0; line-height: 1;
         }
         .method-badge .remove-btn:hover { color: #ffcccc; }
-        [id$="-ms_methods_ui"] { min-height: 36px; margin-top: 8px; }
+        #ms_methods_ui { min-height: 36px; margin-top: 8px; }
         .status-msg               { margin-top: 10px; font-weight: bold; font-size: 14px; }
         .status-msg.success       { color: #00a65a; }
         .status-msg.error         { color: #dd4b39; }
@@ -72,8 +85,8 @@ dashboard_shell <- function(tas_ui, sequence_ui) {
                                margin-top: 6px; }
       ")),
       shinydashboard::tabItems(
-        tas_ui,
-        sequence_ui
+        shinydashboard::tabItem(tabName = "acquired_tab", tas_ui),
+        shinydashboard::tabItem(tabName = "plate_tab", sequence_ui)
       )
     )
   )
