@@ -9,7 +9,7 @@
 #' @return A data frame with expanded sample submission data, including generated acquisition IDs.
 #' @export
 #'
-#' @importFrom dplyr intersect slice mutate n group_by ungroup
+#' @importFrom dplyr intersect slice mutate n group_by ungroup relocate select
 #' @importFrom stringr str_split
 #' @importFrom lubridate year
 #' @importFrom writexl write_xlsx
