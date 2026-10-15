@@ -1,0 +1,80 @@
+# Build the shared dashboard frame around the tab module UIs.
+dashboard_shell <- function(tas_ui, sequence_ui) {
+  shinydashboard::dashboardPage(
+    shinydashboard::dashboardHeader(
+      title = shiny::tags$span(
+        shiny::tags$img(
+          src = "logo.png",
+          height = "50px",
+          style = "margin-right: 10px; vertical-align: left;"
+        ),
+        "Comp Tools for Mass Spec"
+      ),
+      titleWidth = 400
+    ),
+    shinydashboard::dashboardSidebar(
+      shinydashboard::sidebarMenu(
+        shinydashboard::menuItem(
+          "TAS Accelerator",
+          tabName = "acquired_tab",
+          icon = shiny::icon("cogs")
+        ),
+        shinydashboard::menuItem(
+          "Sequence Generator",
+          tabName = "plate_tab",
+          icon = shiny::icon("th")
+        )
+      )
+    ),
+    shinydashboard::dashboardBody(
+      shinyjs::useShinyjs(),
+      shiny::tags$style(shiny::HTML("
+        .main-header .logo,
+        .main-header .navbar          { background-color: #157b8d; }
+        .main-header .logo:hover      { background-color: #126d7d; }
+        .main-sidebar                 { background-color: #0f5e6d; }
+        .sidebar-menu > li > a        { color: #d6f0f4; }
+        .sidebar-menu > li.active > a,
+        .sidebar-menu > li > a:hover  { background-color: #157b8d;
+                                        color: #ffffff;
+                                        border-left-color: #a8dde5; }
+        .sidebar-menu > li > a .fa    { color: #a8dde5; }
+        .method-badge {
+          display: inline-flex; align-items: center;
+          background-color: #157b8d; color: white;
+          border-radius: 12px; padding: 4px 10px;
+          margin: 4px; font-size: 13px; font-weight: bold;
+        }
+        .method-badge .remove-btn {
+          background: none; border: none; color: white;
+          margin-left: 6px; cursor: pointer;
+          font-size: 14px; padding: 0; line-height: 1;
+        }
+        .method-badge .remove-btn:hover { color: #ffcccc; }
+        [id$="-ms_methods_ui"] { min-height: 36px; margin-top: 8px; }
+        .status-msg               { margin-top: 10px; font-weight: bold; font-size: 14px; }
+        .status-msg.success       { color: #00a65a; }
+        .status-msg.error         { color: #dd4b39; }
+        .selection-active         { color: #157b8d; font-weight: bold; font-size: 15px;
+                                    margin-top: 8px; margin-bottom: 8px; }
+        .selection-idle           { color: #6c757d; font-weight: bold; font-size: 15px;
+                                    margin-top: 8px; margin-bottom: 8px; }
+        .rank-list-container { background: #f4fafb; border: 1px solid #cfe6ea;
+                               border-radius: 6px; padding: 8px; min-height: 40px; }
+        .rank-list-item      { background: #157b8d; color: #fff; border-radius: 12px;
+                               padding: 6px 12px; margin: 4px; font-size: 13px;
+                               font-weight: bold; cursor: grab; display: inline-block; }
+        .rank-list-item:active { cursor: grabbing; }
+        .rank-var-label      { font-weight: bold; color: #0f5e6d; margin-top: 10px; }
+        .order-saved-msg     { color: #00a65a; font-weight: bold; font-size: 13px;
+                               margin-top: 6px; }
+        .order-unsaved-msg   { color: #dd4b39; font-weight: bold; font-size: 13px;
+                               margin-top: 6px; }
+      ")),
+      shinydashboard::tabItems(
+        tas_ui,
+        sequence_ui
+      )
+    )
+  )
+}
