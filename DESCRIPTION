@@ -10,16 +10,26 @@ License: MIT + file LICENSE
 Depends: R (>= 4.4)
 Imports:
   dplyr,
+  DT,
   httr,
   jose,
   jsonlite,
   lubridate,
   magrittr,
   purrr,
+  shinydashboard,
   stringr,
   tidyr,
+  readxl,
+  rlang,
+  shiny,
+  shinyjs,
+  sortable,
+  stats,
+  tibble,
+  utils,
   writexl,
-  tibble
+  zip
 URL: https://github.com/IDSS-NIAID/MetLip-FrontEnd-Automation
 RoxygenNote: 7.3.3
 Encoding: UTF-8

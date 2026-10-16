@@ -1,6 +1,5 @@
-# Build the shared dashboard frame around the tab module UIs.
-#' @param tas_ui UI for the "TAS Accelertaor" tab 
-#' @param sequence_ui UI for the "Sequence Generator" tab
+#' dashboard_shell
+#' Build the shared dashboard frame around the tab module UIs.
 #' @return A 'shinydashboard::dashboardPage()' used for a Shiny app
 #' 
 #' @importFrom shiny HTML
@@ -31,6 +30,13 @@ dashboard_shell <- function() {
   "))
 }
 
+#' dashboard_ui
+#' UI elements for the dashboard
+#' 
+#' @return Shiny UI element
+#' @importFrom shiny icon
+#' @importFrom shinydashboard dashboardBody dashboardHeader dashboardPage dashboardSidebar menuItem sidebarMenu tabItems
+#' @importFrom shinyjs useShinyjs
 dashboard_ui <- function() {
   dashboardPage(
   dashboardHeader(
