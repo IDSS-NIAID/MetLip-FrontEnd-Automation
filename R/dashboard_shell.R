@@ -1,3 +1,9 @@
+#' dashboard_shell
+#' Build the shared dashboard frame around the tab module UIs.
+#' @return A 'shinydashboard::dashboardPage()' used for a Shiny app
+#' 
+#' @importFrom shiny HTML
+#' @export
 dashboard_shell <- function() {
   tags$style(HTML("
     .main-header .logo, .main-header .navbar { background-color: #157b8d; }
@@ -24,6 +30,13 @@ dashboard_shell <- function() {
   "))
 }
 
+#' dashboard_ui
+#' UI elements for the dashboard
+#' 
+#' @return Shiny UI element
+#' @importFrom shiny icon
+#' @importFrom shinydashboard dashboardBody dashboardHeader dashboardPage dashboardSidebar menuItem sidebarMenu tabItems
+#' @importFrom shinyjs useShinyjs
 dashboard_ui <- function() {
   dashboardPage(
   dashboardHeader(
@@ -48,5 +61,4 @@ dashboard_ui <- function() {
       sequence_generator_ui("sequence_generator")
     )
   )
-)
-}
+)}

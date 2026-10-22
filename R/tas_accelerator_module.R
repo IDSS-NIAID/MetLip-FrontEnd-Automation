@@ -1,3 +1,11 @@
+#' tas_accelerator_ui
+#' UI element for TAS eaccelerator tab
+#' 
+#' @param id NS session id
+#' 
+#' @return A shiny UI element
+#' @importFrom shiny NS
+#' @importFrom shinyjs hidden
 tas_accelerator_ui <- function(id) {
   ns <- shiny::NS(id)
       tabItem(tabName = "acquired_tab",
@@ -58,6 +66,15 @@ tas_accelerator_ui <- function(id) {
       )
 }
 
+#' tas_accelerator_server
+#' Server function for TAS eaccelerator tab
+#' 
+#' @param id NS session id
+#' @param app_state current app state
+#' @param tas_client TAS client connector
+#' 
+#' @importFrom readxl read_excel
+#' @importFrom shiny moduleServer reactiveValues updateTextInput
 tas_accelerator_server <- function(id, app_state, tas_client = MetLipAutomation::new_tas_client()) {
   shiny::moduleServer(id, function(input, output, session) {
     rv <- shiny::reactiveValues(
@@ -123,7 +140,7 @@ tas_accelerator_server <- function(id, app_state, tas_client = MetLipAutomation:
       err <- tryCatch({
         detail <- httr::content(res, "text", encoding = "UTF-8")
         if (!is.null(detail) && nchar(detail) > 0)
-          paste0("HTTP ", res$status_code, " — ", detail)
+          paste0("HTTP ", res$status_code, " \u0336 ", detail)
         else paste("HTTP", res$status_code)
       }, error = function(e) paste("HTTP", res$status_code))
       output$search_status <- renderUI(
@@ -171,7 +188,7 @@ tas_accelerator_server <- function(id, app_state, tas_client = MetLipAutomation:
       tags$span(class = "method-badge", methods[i],
                 tags$button(class = "remove-btn",
                             onclick = paste0("Shiny.setInputValue('", session$ns("remove_method"), "', ", i,
-                                             ", {priority: 'event'})"), "✕"))
+                                             ", {priority: 'event'})"), "\u2715"))
     })
   })
   
@@ -256,11 +273,11 @@ tas_accelerator_server <- function(id, app_state, tas_client = MetLipAutomation:
       err <- tryCatch({
         detail <- httr::content(res, "text", encoding = "UTF-8")
         if (!is.null(detail) && nchar(detail) > 0)
-          paste0("HTTP ", res$status_code, " — ", detail)
+          paste0("HTTP ", res$status_code, " \u0336 ", detail)
         else paste("HTTP", res$status_code)
       }, error = function(e) paste("HTTP", res$status_code))
       output$upload_status <- renderUI(
-        tags$p(paste("❌ Upload failed:", err), class = "status-msg error")
+        tags$p(paste("\u2715 Upload failed:", err), class = "status-msg error")
       )
     }
     shinyjs::enable("upload_btn")

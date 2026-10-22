@@ -1,3 +1,12 @@
+#' sequence_generator_ui
+#' UI elements for the sequence generator tab
+#' 
+#' @param id NS session id
+#' 
+#' @return Shiny UI element
+#' @importFrom shiny actionButton br checkboxInput column downloadButton fileInput fluidRow h4 icon numericInput p radioButtons selectInput strong textInput uiOutput
+#' @importFrom shinydashboard box tabItem
+#' @importFrom DT DTOutput
 sequence_generator_ui <- function(id) {
   ns <- shiny::NS(id)
       tabItem(tabName = "plate_tab",
@@ -150,7 +159,7 @@ sequence_generator_ui <- function(id) {
                                     ),
                                     br(),
                                     fluidRow(
-                                      column(4, numericInput(ns("injection_vol"), "Injection Volume (µL):",
+                                      column(4, numericInput(ns("injection_vol"), "Injection Volume (\u03bcL):",
                                                              value = 5, min = 2, max = 20, step = 0.5)),
                                       column(4, br(), actionButton(ns("generate_seq_btn"), "Generate Sequence",
                                                                    icon = icon("coffee"), class = "btn-warning")),
@@ -172,6 +181,19 @@ sequence_generator_ui <- function(id) {
       )
 }
 
+#' sequence_generator_server
+#' Server function for sequence generator tab
+#' 
+#' @param id NS id of the session
+#' @param app_state Current app state
+#' 
+#' @importFrom dplyr count
+#' @importFrom shiny actionButton br checkboxGroupInput column div downloadHandler fluidRow observe observeEvent renderUI req tagList textInput showNotification updateSelectInput updateTextInput
+#' @importFrom DT datatable renderDT
+#' @importFrom readxl read_excel
+#' @importFrom rlang .data
+#' @importFrom sortable rank_list
+#' @importFrom zip zipr
 sequence_generator_server <- function(id, app_state) {
   shiny::moduleServer(id, function(input, output, session) {
     rv <- shiny::reactiveValues(
@@ -366,7 +388,7 @@ sequence_generator_server <- function(id, app_state) {
                tags$tbody(lapply(seq_len(nrow(ma)), function(i) {
                  tags$tr(
                    tags$td(ma$Matrix[i]), tags$td(ma$FirstID[i]), tags$td(ma$LastID[i]),
-                   tags$td(tags$button("✕", class = "btn btn-danger btn-xs",
+                   tags$td(tags$button("\u2715", class = "btn btn-danger btn-xs",
                                        onclick = paste0("Shiny.setInputValue('", session$ns("remove_matrix"), "', ", i,
                                                         ", {priority: 'event'})")))
                  )

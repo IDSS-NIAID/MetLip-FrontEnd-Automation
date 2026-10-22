@@ -7,7 +7,7 @@
 #' Will be maintained in case the acquisition ID generation strategy continues.
 #' 
 #'
-#' @param submitted_sample_data A data frame containing acquisition IDs, with column `Submitted Sample Ids`.
+#' @param pre_processed_data A data frame containing pre-processed data
 #'
 #' @return A data frame with expanded sample submission data, including generated acquisition IDs.
 #' 
