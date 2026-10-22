@@ -36,11 +36,6 @@ generate_sequence(
 
 \item{lc_methods}{Named character vector mapping each MS method to its LC method (e.g. c(TCMU = "HILIC_pos")). Optional.}
 
-<<<<<<< HEAD
-=======
-\item{sciex_names}{This is something --------- need to fill this in}
-
->>>>>>> 82b34d8f27873d4d636de136f5a2a13b20cbbf8f
 \item{qc_blank_interval}{Integer. Insert a QC + blank after every N samples. Default 10.}
 
 \item{group_by_cols}{Character vector of column names to randomize within. Empty = simple shuffle of all samples in the batch. When supplied, the order of groups is shuffled AND samples within each group are shuffled.}

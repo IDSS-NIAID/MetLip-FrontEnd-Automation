@@ -3,7 +3,6 @@
 #' @return A 'shinydashboard::dashboardPage()' used for a Shiny app
 #' 
 #' @importFrom shiny HTML tags
-#' @export
 dashboard_shell <- function() {
   tags$style(HTML("
     .main-header .logo, .main-header .navbar { background-color: #157b8d; }
@@ -37,7 +36,6 @@ dashboard_shell <- function() {
 #' @importFrom shiny icon
 #' @importFrom shinydashboard dashboardBody dashboardHeader dashboardPage dashboardSidebar menuItem sidebarMenu tabItems
 #' @importFrom shinyjs useShinyjs
-
 dashboard_ui <- function() {
   dashboardPage(
   dashboardHeader(

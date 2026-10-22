@@ -2,11 +2,14 @@
 
 export(append_project_name)
 export(build_tas_identity_jwt)
+export(dashboard_shell)
+export(dashboard_ui)
 export(detect_submitted_sample_id_column)
 export(generate_plate_meta_data)
 export(generate_sample_meta_data)
 export(generate_sequence)
 export(get_tas_token)
+export(load_MetLip_FrontEnd)
 export(new_tas_client)
 export(process_acquisition_ids)
 export(process_acquisition_ids_reduced)
@@ -74,6 +77,7 @@ importFrom(shiny,
   renderUI,
   req,
   selectInput,
+  shinyApp,
   showNotification,
   strong,
   tagList,
@@ -98,7 +102,10 @@ importFrom(shinyjs,
   hidden,
   useShinyjs
 )
-importFrom(sortable,rank_list)
+importFrom(sortable,
+  enable_modules,
+  rank_list
+)
 importFrom(stats,
   runif,
   setNames
@@ -111,3 +118,4 @@ importFrom(tibble,tibble)
 importFrom(tidyr,drop_na)
 importFrom(utils,write.csv)
 importFrom(writexl,write_xlsx)
+importFrom(zip,zipr)
