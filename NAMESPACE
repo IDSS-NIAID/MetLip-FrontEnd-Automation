@@ -14,6 +14,11 @@ export(process_plate_data)
 export(tas_download_submitted_samples)
 export(tas_upload_acquired_samples)
 export(vectorize_input)
+importFrom(DT,
+  DTOutput,
+  datatable,
+  renderDT
+)
 importFrom(dplyr,
   across,
   all_of,
@@ -21,6 +26,7 @@ importFrom(dplyr,
   arrange,
   bind_rows,
   case_when,
+  count,
   desc,
   distinct,
   filter,
@@ -30,6 +36,7 @@ importFrom(dplyr,
   left_join,
   mutate,
   n,
+  relocate,
   rename,
   row_number,
   select,
@@ -40,6 +47,58 @@ importFrom(dplyr,
 importFrom(lubridate,year)
 importFrom(magrittr,"%>%")
 importFrom(purrr,map)
+importFrom(readxl,read_excel)
+importFrom(rlang,.data)
+importFrom(shiny,
+  HTML,
+  NS,
+  actionButton,
+  br,
+  checkboxGroupInput,
+  checkboxInput,
+  column,
+  div,
+  downloadButton,
+  downloadHandler,
+  fileInput,
+  fluidRow,
+  h4,
+  icon,
+  moduleServer,
+  numericInput,
+  observe,
+  observeEvent,
+  p,
+  radioButtons,
+  reactiveValues,
+  renderUI,
+  req,
+  selectInput,
+  showNotification,
+  strong,
+  tagList,
+  tags,
+  textInput,
+  uiOutput,
+  updateSelectInput,
+  updateTextInput
+)
+importFrom(shinydashboard,
+  box,
+  dashboardBody,
+  dashboardHeader,
+  dashboardPage,
+  dashboardSidebar,
+  menuItem,
+  sidebarMenu,
+  tabItem,
+  tabItems
+)
+importFrom(shinyjs,
+  hidden,
+  useShinyjs
+)
+importFrom(sortable,rank_list)
 importFrom(stats,
   runif,
   setNames

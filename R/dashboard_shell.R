@@ -2,7 +2,7 @@
 #' Build the shared dashboard frame around the tab module UIs.
 #' @return A 'shinydashboard::dashboardPage()' used for a Shiny app
 #' 
-#' @importFrom shiny HTML
+#' @importFrom shiny HTML tags
 #' @export
 dashboard_shell <- function() {
   tags$style(HTML("
@@ -37,6 +37,7 @@ dashboard_shell <- function() {
 #' @importFrom shiny icon
 #' @importFrom shinydashboard dashboardBody dashboardHeader dashboardPage dashboardSidebar menuItem sidebarMenu tabItems
 #' @importFrom shinyjs useShinyjs
+
 dashboard_ui <- function() {
   dashboardPage(
   dashboardHeader(
