@@ -21,7 +21,6 @@ server <- function(input, output, session) {
     df_confirmed = NULL,
     submitted_id_col = NULL
   )
-
   tas_accelerator_server("tas_accelerator", app_state)
   sequence_generator_server("sequence_generator", app_state)
 }
