@@ -7,7 +7,7 @@
 process_acquisition_ids_reduced(pre_processed_data)
 }
 \arguments{
-\item{submitted_sample_data}{A data frame containing acquisition IDs, with column `Submitted Sample Ids`.}
+\item{pre_processed_data}{A data frame containing pre-processed data}
 }
 \value{
 A data frame with expanded sample submission data, including generated acquisition IDs.

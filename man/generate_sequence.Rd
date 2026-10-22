@@ -9,7 +9,18 @@ generate_sequence(
   qc_plate_data,
   blank_plate_data,
   project_id,
-  injection_vol
+  injection_vol,
+  lc_methods = character(),
+  sciex_names = character(),
+  qc_blank_interval = 10,
+  group_by_cols = character(),
+  level_orders = list(),
+  randomize = TRUE,
+  qc_plate_override = NULL,
+  qc_position_override = NULL,
+  blank_plate_override = NULL,
+  blank_position_override = NULL,
+  output_dir = getwd()
 )
 }
 \arguments{
@@ -22,9 +33,34 @@ generate_sequence(
 \item{project_id}{Unique project identifier.}
 
 \item{injection_vol}{Numeric value specifying the injection volume.}
+
+\item{lc_methods}{Named character vector mapping each MS method to its LC method (e.g. c(TCMU = "HILIC_pos")). Optional.}
+
+<<<<<<< HEAD
+=======
+\item{sciex_names}{This is something --------- need to fill this in}
+
+>>>>>>> 82b34d8f27873d4d636de136f5a2a13b20cbbf8f
+\item{qc_blank_interval}{Integer. Insert a QC + blank after every N samples. Default 10.}
+
+\item{group_by_cols}{Character vector of column names to randomize within. Empty = simple shuffle of all samples in the batch. When supplied, the order of groups is shuffled AND samples within each group are shuffled.}
+
+\item{level_orders}{Optional named list mapping a grouping column name to an ordered character vector of its levels, e.g. list(Timepoint = c("Pre","Day1","Day7")). For any grouping column present in this list, groups run in the specified level order (deterministic) instead of being shuffled; samples are still shuffled WITHIN each group. Ordering is applied per-variable and nested in the order the columns appear in group_by_cols. Columns not listed here keep the default shuffled-group behavior. Levels not listed for a given column are appended after the specified ones, in their existing order.}
+
+\item{randomize}{Logical. Determines whether or not sample injection order should be randomized.}
+
+\item{qc_plate_override}{Optional. Override the QC plate number.}
+
+\item{qc_position_override}{Optional. Override the QC vial position.}
+
+\item{blank_plate_override}{Optional. Override the blank plate number.}
+
+\item{blank_position_override}{Optional. Override the blank vial position.}
+
+\item{output_dir}{Directory to write CSV files to. Defaults to getwd(); on Posit Connect use tempdir().}
 }
 \value{
-Exports sequence CSV files for SciexOS import.
+(Invisibly) a character vector of file paths written.
 }
 \description{
 This function generates a randomized mass spec sequence, inserting QC and BLANK samples at specified intervals.
