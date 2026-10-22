@@ -30,8 +30,6 @@ The dashboard can be loaded as follows (the package must either be installed as 
 MetLipAutomation::load_MetLip_FrontEnd()
 ```
 
-The dashboard expects `RShiny/www/logo.png` to remain alongside the script.
-
 ### TAS access
 
 The **TAS Accelerator** tab calls the production TAS API at `https://rtb.nih.gov`. Before starting the dashboard with TAS access, set:

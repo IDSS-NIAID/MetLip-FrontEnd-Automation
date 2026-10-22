@@ -40,7 +40,7 @@ dashboard_ui <- function() {
   dashboardPage(
   dashboardHeader(
     title = tags$span(
-      tags$img(src = "logo.png", height = "50px",
+      tags$img(src = "https://raw.githubusercontent.com/BIFX572-26/MetLip-FrontEnd-Automation/refs/heads/main/assets/logo.png", height = "50px",
                style = "margin-right: 10px; vertical-align: left;"),
       "Comp Tools for Mass Spec"
     ),
