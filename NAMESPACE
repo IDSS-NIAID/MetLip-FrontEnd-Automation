@@ -2,8 +2,6 @@
 
 export(append_project_name)
 export(build_tas_identity_jwt)
-export(dashboard_shell)
-export(dashboard_ui)
 export(detect_submitted_sample_id_column)
 export(generate_plate_meta_data)
 export(generate_sample_meta_data)
