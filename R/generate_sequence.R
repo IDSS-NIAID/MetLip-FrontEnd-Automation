@@ -8,6 +8,7 @@
 #' @param project_id Unique project identifier.
 #' @param injection_vol Numeric value specifying the injection volume.
 #' @param lc_methods Named character vector mapping each MS method to its LC method (e.g. c(TCMU = "HILIC_pos")). Optional.
+#' @param sciex_names A character vector of sciex_names
 #' @param qc_blank_interval Integer. Insert a QC + blank after every N samples. Default 10.
 #' @param group_by_cols Character vector of column names to randomize within. Empty = simple shuffle of all samples in the batch. When supplied, the order of groups is shuffled AND samples within each group are shuffled.
 #' @param level_orders Optional named list mapping a grouping column name to an ordered character vector of its levels, e.g. list(Timepoint = c("Pre","Day1","Day7")). For any grouping column present in this list, groups run in the specified level order (deterministic) instead of being shuffled; samples are still shuffled WITHIN each group. Ordering is applied per-variable and nested in the order the columns appear in group_by_cols. Columns not listed here keep the default shuffled-group behavior. Levels not listed for a given column are appended after the specified ones, in their existing order.

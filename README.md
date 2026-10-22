@@ -17,27 +17,18 @@ The repository contains:
 The package requires **R 4.4 or later**. Install the package and the dashboard dependencies from an R session:
 
 ``` r
-install.packages(c(
-  "devtools", "shiny", "shinydashboard", "jose", "httr", "jsonlite",
-  "DT", "shinyjs", "dplyr", "writexl", "readxl", "zip", "sortable"
-))
-
-devtools::install_github("IDSS-NIAID/MetLip-FrontEnd-Automation")
+pak::pak("IDSS-NIAID/MetLip-FrontEnd-Automation")
 ```
 
 For local development from a cloned repository, use `devtools::load_all(".")` instead of installing from GitHub.
 
 ### Run the dashboard
 
-From the repository root, load the dashboard script and pass its returned application object to Shiny:
+The dashboard can be loaded as follows (the package must either be installed as described above or you can run `devtools::load_all()` if you want to load the active development version):
 
 ``` r
-devtools::load_all(".")
-app <- source("RShiny/MetLip_FrontEnd_shiny_dashboard.R", echo = FALSE)$value
-shiny::runApp(app)
+MetLipAutomation::load_MetLip_FrontEnd()
 ```
-
-The dashboard expects `RShiny/www/logo.png` to remain alongside the script.
 
 ### TAS access
 

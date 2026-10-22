@@ -3,7 +3,6 @@
 #' @return A 'shinydashboard::dashboardPage()' used for a Shiny app
 #' 
 #' @importFrom shiny HTML tags
-#' @export
 dashboard_shell <- function() {
   tags$style(HTML("
     .main-header .logo, .main-header .navbar { background-color: #157b8d; }
@@ -37,12 +36,11 @@ dashboard_shell <- function() {
 #' @importFrom shiny icon
 #' @importFrom shinydashboard dashboardBody dashboardHeader dashboardPage dashboardSidebar menuItem sidebarMenu tabItems
 #' @importFrom shinyjs useShinyjs
-
 dashboard_ui <- function() {
   dashboardPage(
   dashboardHeader(
     title = tags$span(
-      tags$img(src = "logo.png", height = "50px",
+      tags$img(src = "https://raw.githubusercontent.com/BIFX572-26/MetLip-FrontEnd-Automation/refs/heads/main/assets/logo.png", height = "50px",
                style = "margin-right: 10px; vertical-align: left;"),
       "Comp Tools for Mass Spec"
     ),

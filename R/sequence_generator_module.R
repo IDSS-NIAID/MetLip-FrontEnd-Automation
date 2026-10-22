@@ -266,7 +266,7 @@ sequence_generator_server <- function(id, app_state) {
       )
     }
     
-    rv$plate_id_col <- MetLipAutomation::detect_submitted_sample_id_column(rv$df_source)
+    rv$plate_id_col <- detect_submitted_sample_id_column(rv$df_source)
     
     # Detect parsed/extra columns beyond the standard TAS columns
     standard_cols <- c("Acquired Sample ID", "Acquired Sample Name",
@@ -596,7 +596,7 @@ sequence_generator_server <- function(id, app_state) {
     req(rv$df_validated)
     
     plate_meta <- tryCatch(
-      MetLipAutomation::generate_plate_meta_data(rv$df_validated, randomize = FALSE),
+      generate_plate_meta_data(rv$df_validated, randomize = FALSE),
       error = function(e) {
         showNotification(paste("Plate generation failed:", e$message), type = "error"); NULL
       }
@@ -604,7 +604,7 @@ sequence_generator_server <- function(id, app_state) {
     if (is.null(plate_meta)) return()
     
     processed <- tryCatch(
-      MetLipAutomation::process_plate_data(plate_meta, rv$df_validated),
+      process_plate_data(plate_meta, rv$df_validated),
       error = function(e) {
         showNotification(paste("Plate processing failed:", e$message), type = "error"); NULL
       }
@@ -755,7 +755,7 @@ sequence_generator_server <- function(id, app_state) {
     dir.create(td, recursive = TRUE)
     
     paths <- tryCatch(
-      MetLipAutomation::generate_sequence(
+      generate_sequence(
         rv$plate_results$plate_loading,
         rv$plate_results$qc_plate_data,
         rv$plate_results$blank_plate_data,
