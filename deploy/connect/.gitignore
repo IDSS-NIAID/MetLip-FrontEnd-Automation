@@ -1,0 +1,10 @@
+library/
+renv/cellar/
+renv/library/
+renv/staging/
+.Renviron
+.Rhistory
+.RData
+rsconnect/
+manifest.json
+release.json

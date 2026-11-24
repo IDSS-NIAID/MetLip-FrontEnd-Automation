@@ -1,34 +1,47 @@
 # MetLip Front-End Automation
 
-`MetLipAutomation` is an R package and Shiny dashboard for preparing metabolomics/lipidomics sample runs. It supports the workflow from Technology Accessioning System (TAS) sample retrieval through acquired-sample naming, plate loading metadata, and SciexOS-compatible sequence CSV files.
+`MetLipAutomation` is an R package and three-tab Shiny dashboard for metabolomics and lipidomics. It supports Technology Accessioning System (TAS) sample retrieval, acquired-sample naming, plate metadata, SciexOS sequence files, and independent processing of acquired data with MetLip Processing v2.4.7.
+
+The integrated version in this workspace is an **unpublished local candidate**. Package version `0.0-3` does not identify these changes on GitHub. No integration commit has been published or verified. Use the local candidate below; install from GitHub only after a tested full commit SHA has been recorded.
 
 The repository contains:
 
 | Path | Purpose |
 |------------------------------------|------------------------------------|
 | `R/` | Reusable package functions for metadata, plate, and sequence generation. |
-| `RShiny/MetLip_FrontEnd_shiny_dashboard.R` | The current two-tab Shiny dashboard. |
-| `RShiny/www/logo.png` | Dashboard branding asset. |
+| `R/load_MetLip_FrontEnd.R` | Public launcher for TAS Accelerator, Sequence Generator and MetLip Processing. |
+| `R/processing_*.R` | Processing helpers and session-scoped modules. |
+| `inst/processing/` | Installed browser assets, report templates and portable report helpers. |
+| `inst/branding/` | Installed dashboard branding. |
+| `deploy/connect/` | Deployment entry point, dependency lockfile and local preparation instructions. |
 | `tests/testthat/` | Automated tests for plate metadata generation. |
 | `scripts/` | Development and exploratory scripts; these are not the supported application entry point. |
 
 ## Requirements and installation
 
-The package requires **R 4.4 or later**. Install the package and the dashboard dependencies from an R session:
+The package requires **R 4.4 or later**. The candidate lockfile records **R 4.6.1**; use that version for release validation. `qcdrift` is pinned to `Hood-BIFX/qcdrift@d4cc6399e0ed54748d787290494d0118a0ab9c2c`. Report R packages are declared in the package's `Suggests` and explicitly included in the deployment environment: `quarto`, `knitr`, `rmarkdown` and `htmltools`.
 
-``` r
-pak::pak("IDSS-NIAID/MetLip-FrontEnd-Automation")
+From the integration workspace, prepare and check the local candidate in fresh directories:
+
+```bash
+python3 integration/phase6/run_checks.py \
+  --output integration/phase6/evidence/local-rerun \
+  --candidate integration/phase6/candidates/local-rerun
 ```
 
-For local development from a cloned repository, use `devtools::load_all(".")` instead of installing from GitHub.
+This builds a source archive, records the dependencies, and checks an installed package from an unrelated directory. It uses copies of installed dependencies for offline validation. It does not prove fresh retrieval from remote repositories. See [Connect preparation](deploy/connect/README.md) for restore, launch, GitHub pinning and manifest commands.
 
 ### Run the dashboard
 
-The dashboard can be loaded as follows (the package must either be installed as described above or you can run `devtools::load_all()` if you want to load the active development version):
+With the package installed, the public launcher remains:
 
 ``` r
 MetLipAutomation::load_MetLip_FrontEnd()
 ```
+
+For the deployment entry point, use `shiny::runApp("deploy/connect")` from the package root after selecting the restored library. Its `app.R` sets `shiny.maxRequestSize = 100 * 1024^2` (100 MiB) before calling the public launcher. Direct callers of the public launcher should set the same option when accepting uploads of that size. Package loading itself does not change global options.
+
+Styled HTML reports also require the **Quarto executable**, separately from the R package. The accepted local report run used Quarto CLI **1.9.38**. On the host, expose the executable through `PATH` or set `QUARTO_PATH` to its full executable filename. Confirm an actual report render under the application's runtime identity; executable discovery alone does not establish report readiness.
 
 ### TAS access
 
@@ -41,7 +54,7 @@ The **TAS Accelerator** tab calls the production TAS API at `https://rtb.nih.gov
 
 On Posit Connect, configure these as environment variables in the deployment environment rather than placing them in code or files. The dashboard caches a TAS API token per R process and refreshes it before expiry.
 
-Without valid TAS credentials, the Sequence Generator can still be used by uploading an acquired-samples Excel workbook.
+Without valid TAS credentials, the Sequence Generator can still be used by uploading an acquired-samples Excel workbook. MetLip Processing uses its own uploads and does not require TAS. Retain the existing Connect access policy and TAS environment configuration during a later deployment.
 
 ## Dashboard workflow
 
@@ -77,6 +90,12 @@ This tab creates plate-loading files and run sequences.
     - `sequences/`: CSV sequence files, one per MS method, matrix, and batch.
 
 Sequence files begin with four blanks, then one QC and one blank; insert a QC and blank between sample chunks at the selected interval; and end with one QC and one blank. Default QC and blank locations are plate 3, vials 53 and 54, respectively; the dashboard exposes them as editable inputs.
+
+### 3. MetLip Processing
+
+Upload processing data and metadata independently of the first two tabs. Choose metabolomics or lipidomics, review duplicate/sample mappings, then run processing or load prepared data. The integrated workflow retains all four normalizations (including PQN), the PCA 5% component-selection rule, PCA controls, comparisons and pathway annotations.
+
+Downloads include CSV/TSV matrices, PDFs, PCA models, ZIP bundles, HTML reports and portable report sources. Reports retain template 0.13.1 and snapshot schema 5 with older-field compatibility. Normalization-factor tables and exports remain available; the retired factor plot remains excluded. Results and exports belong to the current session and use temporary storage.
 
 ## Package functions
 

@@ -1,0 +1,11 @@
+Type: Project
+Title: MetLip Connect deployment environment
+Version: 0.0.3
+Depends: R (>= 4.4)
+Imports:
+    MetLipAutomation,
+    htmltools,
+    knitr,
+    quarto,
+    renv,
+    rmarkdown

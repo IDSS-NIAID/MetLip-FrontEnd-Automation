@@ -1,0 +1,14 @@
+.metlip-processing .metlip-figure {container-type:inline-size; width:100%;}
+.metlip-processing .metlip-figure-row {display:flex; align-items:flex-start; gap:16px;}
+.metlip-processing .pca-figure > .metlip-figure-row {align-items:center; gap:8px;}
+.metlip-processing .metlip-figure-main {flex:1 1 0; min-width:0; width:100%;}
+.metlip-processing .metlip-legend-slot {flex:0 0 300px; width:300px; min-width:0;}
+.metlip-processing .metlip-legend-slot:empty {display:none;}
+.metlip-processing .metlip-legend-panel {overflow:auto; max-height:var(--plot-height,850px); background:white; border:1px solid #dce5ec; border-radius:6px; padding:6px;}
+.metlip-processing .metlip-legend-panel:focus {outline:2px solid #176d80; outline-offset:2px;}
+.metlip-processing .metlip-legend-panel img {max-width:none;}
+@container (max-width:1079px) {
+  .metlip-processing .metlip-figure-row {flex-direction:column;}
+  .metlip-processing .metlip-legend-slot {flex:0 0 auto; width:100%;}
+  .metlip-processing .metlip-legend-panel {max-height:260px;}
+}

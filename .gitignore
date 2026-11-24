@@ -7,3 +7,4 @@
 rsconnect/
 
 *.csv
+!deploy/connect/DEPENDENCIES.csv

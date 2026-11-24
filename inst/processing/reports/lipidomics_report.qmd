@@ -1,0 +1,279 @@
+---
+title: "Lipidomics (TBL) processing report"
+format:
+  html:
+    embed-resources: true
+    css: report-layout.css
+    toc: true
+    toc-title: "Report contents"
+    toc-location: left
+    toc-depth: 2
+    toc-expand: 2
+    grid:
+      sidebar-width: 240px
+      body-width: 1100px
+      margin-width: 0px
+    anchor-sections: true
+    include-after-body:
+      text: |
+        <script src="report.js"></script>
+params:
+  snapshot: "report_data.rds"
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r, include=FALSE}
+r <- readRDS(params$snapshot)
+source("report_helpers.R", local = TRUE)
+processing_skipped <- isTRUE(r$processing_skipped)
+terms <- r$analysis
+if (is.null(terms)) terms <- list(label = "Lipidomics (TBL)", feature = "lipid", features = "lipids", column = "Lipid")
+modules <- report_modules(r)
+knitr::opts_chunk$set(fig.align = "center", out.width = "100%", echo = FALSE, warning = FALSE, message = FALSE, error = FALSE)
+tags <- htmltools::tags
+```
+
+## Run overview {#run-overview}
+
+```{r, results='asis'}
+report_emit(tags$p(class = "lead", tags$strong(report_value(r$project_title))))
+report_emit(tags$div(class = "report-meta",
+  tags$p(tags$strong("Analysis: "), terms$label),
+  tags$p(tags$strong("Completed: "), report_value(r$completed_at)),
+  tags$p(tags$strong("Author: "), report_value(r$author, "Not provided")),
+  tags$p(tags$strong("MetLip ID: "), report_value(r$metlip_id, "Not provided")),
+  tags$p(tags$strong("TAS ID: "), report_value(r$tas_id, "Not provided"))))
+metric <- function(value, label) tags$div(class = "metric", tags$strong(report_value(value)), tags$span(label))
+report_emit(tags$div(class = "metric-grid",
+  metric(r$normalized_dimensions["samples"], "Retained study samples"),
+  metric(r$normalized_dimensions["features"], paste("Retained", terms$feature, "features")),
+  metric(if (processing_skipped) "Prepared data" else "Processed data", "Measurement workflow")))
+report_workflow(r)
+if (processing_skipped) report_note("Processing skipped. Supplied feature identifiers and measurements were retained after reviewed sample exclusions; only the explicitly selected adjustments were applied. No feature filtering, standard removal, name cleaning, negative-value replacement or imputation was performed.")
+if (isTRUE(r$supplied_preview)) report_note("Counts and the study data preview refer to supplied measurements because the selected normalization was unavailable.")
+if (!is.null(r$analysis_error)) report_emit(tags$p(class = "module-status", tags$strong("Selected normalization unavailable: "), r$analysis_error))
+```
+
+The study measurement table includes the selected sample normalization. The PCA analysis matrix separately applies the selected transformation, centering and scaling. Feature counts describe retained analytical signals, which need not correspond one-to-one with unique identified compounds. Peak-area units are not absolute concentrations.
+
+## Evidence summary {#evidence-summary}
+
+Availability labels describe whether evidence was calculated and recorded. They are not quality grades. **Available** identifies recorded evidence; **Not assessable** identifies a recorded limitation; **Not run** identifies an intentionally skipped analysis; **Not recorded** identifies missing snapshot information.
+
+```{r, results='asis'}
+report_evidence_summary(r, modules)
+```
+
+## Sample and feature accounting {#sample-accounting}
+
+Counts below document sample decisions and feature retention at their recorded processing stages. Preserved standards, excluded controls, and retained study measurements have different roles and denominators.
+
+```{r, results='asis'}
+report_module_status(modules, "Sample and feature accounting")
+report_table(r$summary, caption = "Recorded sample and feature counts")
+```
+
+### Peak-picking notes {#peak-picking-notes}
+
+```{r, results='asis'}
+if (is.null(r$presence_filter_status)) {
+  report_note("Peak-picking notes filtering was not recorded in this older snapshot.")
+} else {
+  report_table(r$presence_filter_summary)
+  if (identical(r$presence_filter_status, "applied")) {
+    report_note("Notes approval uses exact original identifiers marked Y. One approved signal is selected per resulting metabolite name using the greatest total across remaining study, QC and blank samples after negative values are set to zero. Missing values are omitted. Retained at this stage does not imply retention after the subsequent intensity and study-detection filters. Standards are preserved separately.")
+    report_details_start("Peak-picking decisions and unmatched approved identifiers")
+    report_note("Source feature indices follow original feature order. Source positions identify imported data rows excluding the header, or columns in the uploaded peak-area table. Complete decisions are recorded in presence_filter_audit.csv.")
+    report_table(r$presence_filter_audit, max_rows = 30L)
+    report_table(data.frame(Original_identifier = r$presence_filter_unmatched_identifiers))
+    report_details_end()
+  }
+}
+```
+
+```{r, results='asis'}
+report_details_start("Sample roles, duplicate decisions and metadata matching")
+report_table(r$sample_roles, max_rows = 30L, caption = "Recorded sample roles")
+report_table(r$duplicate_review_summary, caption = "Duplicate review summary")
+report_note("Duplicate decisions refer to original occurrences. Input signal totals include all uploaded features and internal standards, omit missing values and treat negatives as zero, before filtering, imputation or normalization. Signal_status explains unavailable totals; metadata rows have no signal total.")
+report_table(r$duplicate_audit, max_rows = 30L, caption = "Duplicate sample decisions")
+report_table(if (is.null(r$excluded_samples)) NULL else data.frame(Sample_ID = r$excluded_samples), caption = "Unmatched study samples excluded")
+report_table(if (is.null(r$unused_metadata)) NULL else data.frame(Sample_ID = r$unused_metadata), caption = "Metadata IDs absent from the data")
+report_details_end()
+```
+
+## Detection and missingness {#detection-missingness}
+
+Detection summaries describe data coverage and the effect of the recorded filtering rules. They precede normalization and PCA.
+
+```{r, results='asis'}
+report_module_status(modules, "Detection and missingness")
+if (!processing_skipped) {
+  report_note(paste("Intensity threshold:", report_setting(r$settings, "intensity_threshold"),
+    "input peak-area units. Minimum study detection fraction:", report_setting(r$settings, "min_presence"), "."))
+  report_note(paste("Imputation replaces originally missing and below-threshold values in retained study features with",
+    report_setting(r$settings, "impute_fraction"),
+    "times the feature's minimum observed study value meeting the intensity threshold. This treats both types of nondetection under the same small-value assumption."))
+  report_figures(r, c("intensity_threshold_sensitivity", "per_sample_detection_counts", "per_lipid_missingness"))
+  report_details_start("Detection and missingness tables")
+  report_table(r$detection_counts, max_rows = 20L, caption = "Detection counts before study feature filtering")
+  report_table(r$missingness, max_rows = 20L, caption = "Missingness after excluding features with no study detections")
+  report_details_end()
+}
+```
+
+## Normalization and QC precision {#normalization-qc}
+
+Normalization factors describe the selected sample-level adjustment. QC precision describes repeatability of eligible QC observations under that adjustment. These quantities do not establish analytical accuracy or overall study validity.
+
+```{r, results='asis'}
+report_module_status(modules, "Normalization")
+report_workflow(r)
+report_note(report_setting(r$selection, "normalization_definition", "The normalization definition was not recorded in this snapshot."))
+report_figures(r, c("density", "rle", "distribution"))
+report_details_start("Selected workflow and normalization factors")
+report_settings(r$selection, caption = "Recorded workflow")
+report_table(r$normalization_factors, max_rows = 20L, caption = "Recorded normalization factors")
+report_details_end()
+```
+
+### QC evidence {#qc-evidence}
+
+```{r, results='asis'}
+report_module_status(modules, "QC precision")
+if (!processing_skipped) {
+  report_qc_context(r)
+  report_comparison(r)
+  report_note("QC RSD uses eligible observed values after normalization and before transformation, centering or scaling. Sample factors use shared imputation, but imputed entries are not counted as repeated QC observations. Missing metrics remain unavailable; a recorded RSD of zero is a valid result.")
+  report_note("The percentage meeting the RSD threshold counts values less than or equal to that threshold and uses only finite eligible RSD values as its denominator. With multiple pools or batches, the unit is a feature/pool/batch combination, not necessarily a unique feature. The selected normalization is identified without ranking the methods.")
+  report_figures(r, "qc_rsd")
+  report_details_start("Recorded reference and QC evaluation settings")
+  report_settings(r$evaluation_settings)
+  if (!is.null(r$evaluation_context)) report_table(data.frame(
+    Setting = names(r$evaluation_context), Value = vapply(r$evaluation_context, report_value, character(1), fallback = "None")))
+  report_details_end()
+} else {
+  report_note("Prepared-QC eligibility concerns completeness for PCA; it is not a QC precision assessment. Incomplete prepared QCs receive no imputation and are excluded from PCA.")
+  report_table(r$qc_eligibility, max_rows = 30L, caption = "Prepared QC eligibility for PCA")
+}
+```
+
+PQN uses common-total prescaling, a feature-wise median reference, and division by each sample's median feature/reference quotient. The recorded reference population identifies the samples used. Sample normalization can remove global biological shifts; aligned distributions and tight QC clusters alone do not establish biological preservation. The descriptive RSD threshold is not a universal acceptance criterion.
+
+## PCA {#pca-results}
+
+PCA describes variation in the selected analysis matrix. Scores locate samples in component space; loadings describe feature contributions. PCA separation is exploratory and is not a significance test. Metadata colors and shapes, including pathway annotations, affect the display only.
+
+```{r, results='asis'}
+report_module_status(modules, "PCA")
+if (isTRUE(r$pca$available)) {
+  report_note(paste("Recorded sample scope:", report_setting(r$pca$settings, "sample_scope")))
+  report_note(paste("Fitted study samples:", report_setting(r$pca$settings, "study_samples"),
+    "| Fitted QCs:", report_setting(r$pca$settings, "fitted_qcs"),
+    "| Projected QCs:", report_setting(r$pca$settings, "projected_qcs"),
+    "| Fitted features:", report_setting(r$pca$settings, "fitted_features")))
+  report_note("Projected QCs use the study-fitted parameters without changing the fit. Including QCs in the fit estimates components from study samples and eligible QCs together. Excluded QCs do not enter the fit or projection.")
+  if (identical(r$pca$variance_label, "Uncentered sum of squares"))
+    report_emit(tags$p(class = "module-status", tags$strong("Uncentered PCA: "), "Component percentages describe uncentered sums of squares, not centered variance. Legacy CSV percentage column names are retained."))
+  report_figures(r, c("pca_scores", "pca_scree"))
+  report_table(r$pca$variance, max_rows = 20L, caption = report_value(r$pca$variance_label, "Component contributions"))
+  report_figures(r, c("pca_loadings", "pca_biplot", "pca_pairs"))
+  if (length(r$pca$plot_errors)) {
+    report_emit(tags$p(tags$strong("Recorded figure availability limitations")))
+    for (name in names(r$pca$plot_errors)) report_note(paste(report_label(name), ":", r$pca$plot_errors[[name]]))
+  }
+  report_details_start("PCA numerical previews, fitted settings and omitted features")
+  report_note(paste("Scores preview:", nrow(r$pca$scores_preview), "of", r$pca$score_dimensions[["rows"]], "rows;",
+    ncol(r$pca$scores_preview), "of", r$pca$score_dimensions[["columns"]], "columns. Full tables are supplied separately."))
+  report_table(r$pca$scores_preview, labels = FALSE, caption = "Sample scores")
+  report_note(paste("Loadings preview:", nrow(r$pca$loadings_preview), "of", r$pca$loading_dimensions[["rows"]], "rows;",
+    ncol(r$pca$loadings_preview), "of", r$pca$loading_dimensions[["columns"]], "columns."))
+  report_table(r$pca$loadings_preview, labels = FALSE, caption = "Feature loadings")
+  report_settings(r$pca$settings, caption = "Fitted PCA settings")
+  report_settings(r$pca$plot_settings, caption = "PCA display settings")
+  report_table(r$pca$omitted_features, max_rows = 20L, caption = "Features omitted from PCA")
+  report_details_end()
+}
+if (!processing_skipped) {
+  report_details_start("Scaling sensitivity")
+  report_note("Component percentages and squared loading concentration describe feature influence, not a quality ranking. With no centering or scaling, percentages describe uncentered sums of squares. Sensitivity fits use their own fitted component bases.")
+  report_table(r$scaling_scorecard)
+  report_details_end()
+}
+if (!is.null(r$pathway_summary)) {
+  report_details_start("Optional pathway annotations")
+  report_table(r$pathway_summary)
+  report_table(r$pathway_settings)
+  report_note("Annotations change feature colors and shapes only. Duplicate signals can inherit the recorded cleaned base-name category while retaining separate measurements and loadings. Annotation matches are not pathway-enrichment tests.")
+  report_details_end()
+}
+```
+
+## Methods, provenance and data {#methods-provenance}
+
+This report presents a fixed snapshot of the recorded workflow. Re-rendering the portable report regenerates its presentation; reproducing the analysis also requires the original inputs, processing code and matching software versions.
+
+### Methods and provenance {#methods}
+
+```{r, results='asis'}
+report_table(r$provenance, caption = "Input provenance")
+report_details_start("Recorded processing settings")
+report_settings(r$settings)
+report_details_end()
+```
+
+RSD is relative standard deviation. PQN is probabilistic quotient normalization; total-sum normalization is also abbreviated TSN. RLE here denotes feature-relative log2 intensity, using a study-sample median reference. PCA is principal component analysis. The per-figure captions identify the measurement stage and denominator.
+
+### Study data preview {#study-data-preview}
+
+```{r, results='asis'}
+report_note(paste("Rows are retained", terms$feature, "features and columns are retained study samples.",
+  if (isTRUE(r$supplied_preview)) "These are supplied measurements because the selected normalization was unavailable." else
+    "These measurements precede the separate PCA transformation, centering and scaling."))
+report_details_start("Bounded study measurement preview")
+report_note(paste("Preview:", nrow(r$normalized_preview), "of", r$normalized_dimensions[["features"]], "rows and",
+  ncol(r$normalized_preview), "of", r$normalized_dimensions[["samples"]] + 1L, "columns, including the feature identifier."))
+report_table(r$normalized_preview, labels = FALSE)
+report_details_end()
+```
+
+### Data index {#data-index}
+
+Figures, legends and bounded table previews are embedded in this HTML. Complete numerical tables and audit records are supplied separately. Paths below are relative to the **tables ZIP**; they are filenames, not links to files embedded in this report. The full results ZIP has its own contents guide and also includes PCA models and figures when available. Individual downloads may have the recorded MetLip ID prefixed to their filenames.
+
+```{r, results='asis'}
+if (is.null(r$data_index)) {
+  report_note("The exported-file index was not recorded in this older snapshot. Complete tables are separate from this HTML.")
+} else {
+  for (group in unique(r$data_index$Group)) {
+    report_details_start(paste(group, "— exported tables"))
+    index <- r$data_index[r$data_index$Group == group, , drop = FALSE]
+    report_table(index[, c("Label", "Filename", "Rows", "Columns", "Description"), drop = FALSE], labels = FALSE)
+    report_details_end()
+  }
+}
+# Keep the retired factors key here so older snapshots cannot display it as an additional figure.
+known <- c("intensity_threshold_sensitivity", "per_sample_detection_counts", "per_lipid_missingness", "factors", "density", "rle", "distribution", "qc_rsd", "pca_scores", "pca_scree", "pca_loadings", "pca_biplot", "pca_pairs")
+report_figures(r, setdiff(r$plots$key, known))
+```
+
+### Methods references {#methods-references}
+
+- [Dieterle et al., 2006: PQN](https://doi.org/10.1021/ac051632c)
+- [van den Berg et al., 2006: transformations and scaling](https://doi.org/10.1186/1471-2164-7-142)
+- [Broadhurst et al., 2018: pooled-QC assessment](https://doi.org/10.1007/s11306-018-1367-3)
+- [Sysi-Aho et al., 2007: lipidomics normalization pitfalls](https://doi.org/10.1186/1471-2105-8-93)
+
+### Run messages and software {#software}
+
+```{r, results='asis'}
+report_note(paste("App version:", report_value(r$app_version), "| Snapshot template version:", report_value(r$template_version),
+  "| Presentation template: 0.13.1"))
+report_emit(tags$details(class = "report-details", tags$summary("Recorded processing log"),
+  tags$pre(report_value(r$messages))))
+report_emit(tags$details(class = "report-details", tags$summary("Analysis R session"),
+  tags$pre(report_value(r$analysis_session_info))))
+```

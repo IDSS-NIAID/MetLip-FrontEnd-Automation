@@ -40,8 +40,10 @@ dashboard_ui <- function() {
   dashboardPage(
   dashboardHeader(
     title = tags$span(
-      tags$img(src = "https://raw.githubusercontent.com/BIFX572-26/MetLip-FrontEnd-Automation/refs/heads/main/assets/logo.png", height = "50px",
-               style = "margin-right: 10px; vertical-align: left;"),
+      htmltools::attachDependencies(
+        tags$img(src = "metlip-branding-1.0.0/logo.png", height = "50px",
+                 style = "margin-right: 10px; vertical-align: left;"),
+        metlip_branding_dependency()),
       "Comp Tools for Mass Spec"
     ),
     titleWidth = 400
@@ -49,7 +51,8 @@ dashboard_ui <- function() {
   dashboardSidebar(
     sidebarMenu(
       menuItem("TAS Accelerator", tabName = "acquired_tab", icon = icon("cogs")),
-      menuItem("Sequence Generator", tabName = "plate_tab", icon = icon("th"))
+      menuItem("Sequence Generator", tabName = "plate_tab", icon = icon("th")),
+      menuItem("MetLip Processing", tabName = "processing_tab", icon = icon("chart-line"))
     )
   ),
   dashboardBody(
@@ -57,7 +60,9 @@ dashboard_ui <- function() {
     dashboard_shell(),
     tabItems(
       tas_accelerator_ui("tas_accelerator"),
-      sequence_generator_ui("sequence_generator")
+      sequence_generator_ui("sequence_generator"),
+      shinydashboard::tabItem(tabName = "processing_tab",
+        metlip_processing_ui("metlip_processing"))
     )
   )
 )}

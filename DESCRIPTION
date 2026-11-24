@@ -9,10 +9,15 @@ Description: Utility package with tools for autmoation of MetLip workflows.
 License: MIT + file LICENSE
 Depends: R (>= 4.4)
 Remotes:
-  Hood-BIFX/qcdrift
+  Hood-BIFX/qcdrift@d4cc6399e0ed54748d787290494d0118a0ab9c2c
 Imports:
   dplyr,
   DT,
+  ggplot2,
+  grDevices,
+  grid,
+  gtable,
+  htmltools,
   httr,
   jose,
   jsonlite,
@@ -22,6 +27,7 @@ Imports:
   qcdrift,
   readxl,
   rlang,
+  scales,
   shiny,
   shinydashboard,
   shinyjs,
@@ -30,12 +36,16 @@ Imports:
   stringr,
   tidyr,
   tibble,
+  tools,
   utils,
   writexl,
   zip
 URL: https://github.com/IDSS-NIAID/MetLip-FrontEnd-Automation
 Encoding: UTF-8
 Suggests: 
+    knitr,
+    quarto,
+    rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.1

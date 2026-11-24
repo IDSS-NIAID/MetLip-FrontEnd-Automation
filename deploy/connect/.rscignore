@@ -1,0 +1,10 @@
+library/
+renv/
+scripts/
+README.md
+DEPENDENCIES.csv
+.gitignore
+.Renviron
+.Rhistory
+.RData
+rsconnect/
